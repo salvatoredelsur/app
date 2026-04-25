@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { AppState, Project } from '../store/useStore';
 import { useIsMobile } from '../hooks/useIsMobile';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 import { SS } from '../tokens';
 import { CircuitBg } from '../components/shared/CircuitBg';
 import { Blob } from '../components/shared/Blob';
@@ -53,6 +54,7 @@ export function Productividad({ state, addProject, updateProject, deleteProject,
   const [sessionForm, setSessionForm] = useState<{ type:'study'|'work'; subject:string; hours:string; minutes:string }>({ type:'study', subject:'', hours:'', minutes:'' });
   const [studyElapsed, setStudyElapsed] = useState(0);
   const [workElapsed, setWorkElapsed] = useState(0);
+  useEscapeKey(() => { setShowModal(false); setEditingProject(null); setShowSessionModal(false); }, showModal || !!editingProject || showSessionModal);
 
   useEffect(() => {
     if (!state.studyTimerStart) { setStudyElapsed(0); return; }
@@ -75,19 +77,17 @@ export function Productividad({ state, addProject, updateProject, deleteProject,
     + (state.studyTimerStart ? Math.floor(studyElapsed / 60) : 0);
   const workMin  = state.workSessions.filter(s => s.date === TODAY).reduce((a, b) => a + b.durationMin, 0)
     + (state.workTimerStart ? Math.floor(workElapsed / 60) : 0);
-  const studyH = +((studyMin || 210) / 60).toFixed(1);
-  const workH  = +((workMin  || 300) / 60).toFixed(1);
+  const studyH = +(studyMin / 60).toFixed(1);
+  const workH  = +(workMin  / 60).toFixed(1);
 
   // Build weekly chart from real sessions
   const weekStudy = Array.from({ length: 7 }, (_, i) => {
     const date = getDateStr(6 - i);
-    const mins = state.studySessions.filter(s => s.date === date).reduce((a, b) => a + b.durationMin, 0);
-    return mins / 60 || (i === 4 ? 3.5 : i === 0 ? 4 : i === 1 ? 5 : i === 2 ? 3 : i === 3 ? 6 : i === 5 ? 2 : 1);
+    return state.studySessions.filter(s => s.date === date).reduce((a, b) => a + b.durationMin, 0) / 60;
   });
   const weekWork = Array.from({ length: 7 }, (_, i) => {
     const date = getDateStr(6 - i);
-    const mins = state.workSessions.filter(s => s.date === date).reduce((a, b) => a + b.durationMin, 0);
-    return mins / 60 || (i === 0 ? 7 : i === 1 ? 8 : i === 2 ? 6 : i === 3 ? 8 : i === 4 ? 5 : i === 5 ? 3 : 0);
+    return state.workSessions.filter(s => s.date === date).reduce((a, b) => a + b.durationMin, 0) / 60;
   });
   const maxHrs = Math.max(...weekStudy, ...weekWork, 1);
 

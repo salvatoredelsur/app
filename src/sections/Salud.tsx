@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { AppState, HealthMetrics } from '../store/useStore';
 import { useIsMobile } from '../hooks/useIsMobile';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 import { SS } from '../tokens';
 import { CircuitBg } from '../components/shared/CircuitBg';
 import { Blob } from '../components/shared/Blob';
@@ -24,6 +25,7 @@ export function Salud({ state, toggleFast, addWeight, setFastGoal, updateHealthM
   const [showWeightModal, setShowWeightModal] = useState(false);
   const [showMetricsModal, setShowMetricsModal] = useState(false);
   const [showFastModal, setShowFastModal] = useState(false);
+  useEscapeKey(() => { setShowWeightModal(false); setShowMetricsModal(false); setShowFastModal(false); }, showWeightModal || showMetricsModal || showFastModal);
   const [weightInput, setWeightInput] = useState('');
   const [fastGoalInput, setFastGoalInput] = useState(String(state.fastGoalHours));
   const [metricsForm, setMetricsForm] = useState({
@@ -116,8 +118,8 @@ export function Salud({ state, toggleFast, addWeight, setFastGoal, updateHealthM
               {weightDiff >= 0 ? '+' : ''}{weightDiff} kg {weightDiff < 0 ? '↓' : '↑'}
             </span>
           </div>
-          <div style={{ width:'100%', overflowX:'hidden' }}>
-            <Sparkline data={weightData.length >= 2 ? weightData : [82,78.5]} color={SS.green} width={mobile ? 280 : 380} height={80} filled/>
+          <div style={{ width:'100%' }}>
+            <Sparkline data={weightData.length >= 2 ? weightData : [82,78.5]} color={SS.green} width={400} height={80} filled fluid/>
           </div>
           <div style={{ display:'flex', justifyContent:'space-between', marginTop:4 }}>
             {['Inicio','','','','Hoy'].map((d, i) => <span key={i} style={{ fontSize:8, color:SS.mutedText }}>{d}</span>)}

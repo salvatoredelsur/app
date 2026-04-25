@@ -4,9 +4,10 @@ interface Props {
   width?: number;
   height?: number;
   filled?: boolean;
+  fluid?: boolean;
 }
 
-export function Sparkline({ data, color, width = 120, height = 36, filled = true }: Props) {
+export function Sparkline({ data, color, width = 120, height = 36, filled = true, fluid = false }: Props) {
   if (!data || data.length < 2) return null;
   const min = Math.min(...data);
   const max = Math.max(...data);
@@ -20,7 +21,7 @@ export function Sparkline({ data, color, width = 120, height = 36, filled = true
   const fill = line + ` L${pts[pts.length-1][0]},${height} L${pts[0][0]},${height} Z`;
   const gradId = `sp_${color.replace('#', '')}`;
   return (
-    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
+    <svg width={fluid ? '100%' : width} height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
       <defs>
         <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor={color} stopOpacity=".25"/>

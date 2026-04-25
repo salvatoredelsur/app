@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { AppState, Habit } from '../store/useStore';
 import { useIsMobile } from '../hooks/useIsMobile';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 import { SS } from '../tokens';
 import { CircuitBg } from '../components/shared/CircuitBg';
 import { Blob } from '../components/shared/Blob';
@@ -33,6 +34,7 @@ export function Habitos({ state, toggleHabit, addHabit, updateHabit, deleteHabit
   const [newHabitColor, setNewHabitColor] = useState<string>(SS.green);
   const [editName, setEditName] = useState('');
   const [editColor, setEditColor] = useState<string>(SS.green);
+  useEscapeKey(() => { setShowModal(false); setEditingHabit(null); }, showModal || !!editingHabit);
 
   const { habits, habitCompletions } = state;
 

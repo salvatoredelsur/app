@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { AppState, Transaction, Payment, Goal } from '../store/useStore';
 import { useIsMobile } from '../hooks/useIsMobile';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 import { SS } from '../tokens';
 import { CircuitBg } from '../components/shared/CircuitBg';
 import { Blob } from '../components/shared/Blob';
@@ -51,6 +52,7 @@ export function Finanzas({ state, togglePayment, addTransaction, addGoalFunds, d
   const [goalFundsId, setGoalFundsId] = useState<number | null>(null);
   const [showTxList, setShowTxList]   = useState(false);
   const [txFilter, setTxFilter] = useState<'all' | 'income' | 'expense'>('all');
+  useEscapeKey(() => { setModal(null); setGoalFundsId(null); }, modal !== null);
 
   const [txForm, setTxForm] = useState({ amount:'', category:'', description:'', type:'expense' as 'income'|'expense' });
   const [goalAmount, setGoalAmount]   = useState('');
@@ -148,7 +150,7 @@ export function Finanzas({ state, togglePayment, addTransaction, addGoalFunds, d
             <CardTitle color={SS.green}>Tendencia de Balance</CardTitle>
             <span style={{ fontSize:11, color:SS.green, fontWeight:700 }}>+19% ↑</span>
           </div>
-          <Sparkline data={BALANCE_TREND} color={SS.green} width={280} height={60}/>
+          <Sparkline data={BALANCE_TREND} color={SS.green} width={400} height={60} fluid/>
           <div style={{ display:'flex', justifyContent:'space-between', marginTop:4 }}>
             {['Ene','Feb','Mar','Abr'].map(m => <span key={m} style={{ fontSize:8, color:SS.mutedText }}>{m}</span>)}
           </div>

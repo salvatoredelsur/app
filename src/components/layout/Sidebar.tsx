@@ -53,6 +53,7 @@ function NavItem({ item, isActive, collapsed, onClick }: { item: typeof NAV[numb
   return (
     <button
       onClick={onClick}
+      title={collapsed ? item.label : undefined}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
