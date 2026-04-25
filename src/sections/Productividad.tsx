@@ -16,12 +16,15 @@ interface Props {
   deleteProject: (id: number) => void;
   toggleStudyTimer: (subject?: string) => void;
   toggleWorkTimer: (project?: string) => void;
+  addStudySession: (subject: string, durationMin: number) => void;
+  addWorkSession: (project: string, durationMin: number) => void;
   incrementPomodoro: () => void;
 }
 
 const WEEK_LABELS = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
 
-const SUBJECTS = [
+const SUBJECT_COLORS = [SS.cyan, SS.blue, SS.yellow, SS.green, SS.orange, SS.pink, SS.purple];
+const DEFAULT_SUBJECTS = [
   { name:'Inteligencia Artificial', hrs:12.5, color:SS.cyan },
   { name:'Programación Web',        hrs:8.0,  color:SS.blue },
   { name:'Inglés',                  hrs:5.5,  color:SS.yellow },
@@ -40,12 +43,14 @@ function getDateStr(daysAgo: number) {
   return d.toISOString().slice(0, 10);
 }
 
-export function Productividad({ state, addProject, updateProject, deleteProject, toggleStudyTimer, toggleWorkTimer, incrementPomodoro }: Props) {
+export function Productividad({ state, addProject, updateProject, deleteProject, toggleStudyTimer, toggleWorkTimer, addStudySession, addWorkSession, incrementPomodoro }: Props) {
   const mobile = useIsMobile();
   const [showModal, setShowModal] = useState(false);
+  const [showSessionModal, setShowSessionModal] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [form, setForm] = useState<{ name:string; cat:string; deadline:string; color:string }>({ name:'', cat:'', deadline:'', color: SS.cyan });
   const [editForm, setEditForm] = useState<{ pct:string; done:string; tasks:string }>({ pct:'', done:'', tasks:'' });
+  const [sessionForm, setSessionForm] = useState<{ type:'study'|'work'; subject:string; hours:string; minutes:string }>({ type:'study', subject:'', hours:'', minutes:'' });
   const [studyElapsed, setStudyElapsed] = useState(0);
   const [workElapsed, setWorkElapsed] = useState(0);
 
@@ -93,6 +98,30 @@ export function Productividad({ state, addProject, updateProject, deleteProject,
     setForm({ name:'', cat:'', deadline:'', color: SS.cyan });
   };
 
+  const handleAddSession = () => {
+    const h = parseInt(sessionForm.hours) || 0;
+    const m = parseInt(sessionForm.minutes) || 0;
+    const total = h * 60 + m;
+    if (total <= 0) return;
+    const label = sessionForm.subject.trim() || (sessionForm.type === 'study' ? 'General' : 'General');
+    if (sessionForm.type === 'study') addStudySession(label, total);
+    else addWorkSession(label, total);
+    setShowSessionModal(false);
+    setSessionForm({ type:'study', subject:'', hours:'', minutes:'' });
+  };
+
+  // Compute subjects from real study sessions (last 30 days), fallback to defaults
+  const computedSubjects = (() => {
+    const bySubject: Record<string, number> = {};
+    for (const s of state.studySessions) {
+      bySubject[s.subject] = (bySubject[s.subject] ?? 0) + s.durationMin;
+    }
+    const entries = Object.entries(bySubject).sort((a, b) => b[1] - a[1]).slice(0, 6);
+    if (entries.length === 0) return DEFAULT_SUBJECTS;
+    return entries.map(([name, mins], i) => ({ name, hrs: +(mins / 60).toFixed(1), color: SUBJECT_COLORS[i % SUBJECT_COLORS.length] }));
+  })();
+  const maxSubjectHrs = Math.max(...computedSubjects.map(s => s.hrs), 1);
+
   const rings = [
     { label:'Estudio Hoy',       current: studyH, goal:6,  color:SS.yellow, noUnit:false },
     { label:'Trabajo Hoy',       current: workH,  goal:8,  color:SS.blue,   noUnit:false },
@@ -105,6 +134,12 @@ export function Productividad({ state, addProject, updateProject, deleteProject,
       <CircuitBg id="pr" opacity={0.05}/>
       <Blob color={SS.yellow} top={-40} left={-40}/>
       <SectionHdr title="Productividad" sub="Estudio, trabajo y proyectos" color={SS.yellow} action="+ Proyecto" onAction={() => setShowModal(true)}/>
+      <div style={{ display:'flex', gap:8, marginBottom:16, marginTop:-10 }}>
+        <button onClick={() => { setSessionForm(p => ({ ...p, type:'study' })); setShowSessionModal(true); }}
+          style={{ fontSize:10, color:SS.yellow, background:`${SS.yellow}12`, border:`1px solid ${SS.yellow}30`, borderRadius:14, padding:'4px 12px', cursor:'pointer', fontFamily:"'DM Sans',sans-serif", fontWeight:600 }}>+ Sesión estudio</button>
+        <button onClick={() => { setSessionForm(p => ({ ...p, type:'work' })); setShowSessionModal(true); }}
+          style={{ fontSize:10, color:SS.blue, background:`${SS.blue}12`, border:`1px solid ${SS.blue}30`, borderRadius:14, padding:'4px 12px', cursor:'pointer', fontFamily:"'DM Sans',sans-serif", fontWeight:600 }}>+ Sesión trabajo</button>
+      </div>
 
       {/* 4 rings — 2×2 on mobile */}
       <div style={{ display:'grid', gridTemplateColumns: mobile ? '1fr 1fr' : 'repeat(4,1fr)', gap:12, marginBottom:20 }}>
@@ -184,16 +219,16 @@ export function Productividad({ state, addProject, updateProject, deleteProject,
           </div>
         </Card>
 
-        {/* Subjects */}
+        {/* Subjects computed from real sessions */}
         <Card color={SS.cyan}>
-          <CardTitle color={SS.cyan}>Materias — Este Mes</CardTitle>
-          {SUBJECTS.map((s, i) => (
-            <div key={i} style={{ marginBottom: i < SUBJECTS.length - 1 ? 10 : 0 }}>
+          <CardTitle color={SS.cyan}>Materias — Total acumulado</CardTitle>
+          {computedSubjects.map((s, i) => (
+            <div key={i} style={{ marginBottom: i < computedSubjects.length - 1 ? 10 : 0 }}>
               <div style={{ display:'flex', justifyContent:'space-between', marginBottom:3 }}>
                 <span style={{ fontSize:11, color:'rgba(255,255,255,0.8)', fontWeight:500 }}>{s.name}</span>
                 <span style={{ fontSize:11, color:s.color, fontWeight:700 }}>{s.hrs}h</span>
               </div>
-              <Bar pct={(s.hrs/15)*100} color={s.color} height={4}/>
+              <Bar pct={(s.hrs/maxSubjectHrs)*100} color={s.color} height={4}/>
             </div>
           ))}
         </Card>
@@ -283,6 +318,35 @@ export function Productividad({ state, addProject, updateProject, deleteProject,
             </div>
           </div>
           <button onClick={handleAdd} style={{ width:'100%', padding:'10px', background:SS.yellow, color:'#060c18', border:'none', borderRadius:10, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>Crear Proyecto</button>
+        </Modal>
+      )}
+
+      {/* Manual session modal */}
+      {showSessionModal && (
+        <Modal title={sessionForm.type === 'study' ? 'Registrar Sesión de Estudio' : 'Registrar Sesión de Trabajo'} color={sessionForm.type === 'study' ? SS.yellow : SS.blue} onClose={() => setShowSessionModal(false)}>
+          <div style={{ display:'flex', gap:8, marginBottom:12 }}>
+            {(['study','work'] as const).map(t => (
+              <button key={t} onClick={() => setSessionForm(p => ({ ...p, type: t }))}
+                style={{ flex:1, padding:'7px', borderRadius:8, border:`1px solid ${sessionForm.type===t?(t==='study'?SS.yellow:SS.blue):'rgba(255,255,255,0.1)'}`, background: sessionForm.type===t?(t==='study'?`${SS.yellow}20`:`${SS.blue}20`):'transparent', color: sessionForm.type===t?(t==='study'?SS.yellow:SS.blue):'rgba(255,255,255,0.4)', fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>
+                {t === 'study' ? '📚 Estudio' : '💼 Trabajo'}
+              </button>
+            ))}
+          </div>
+          <label style={labelStyle}>{sessionForm.type === 'study' ? 'Materia / Tema' : 'Proyecto'}</label>
+          <input value={sessionForm.subject} onChange={e => setSessionForm(p => ({ ...p, subject: e.target.value }))}
+            placeholder={sessionForm.type === 'study' ? 'Inteligencia Artificial…' : 'App SS Personal…'}
+            autoFocus style={inputStyle(sessionForm.type === 'study' ? SS.yellow : SS.blue)}/>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:12 }}>
+            <div>
+              <label style={labelStyle}>Horas</label>
+              <input type="number" min="0" max="23" value={sessionForm.hours} onChange={e => setSessionForm(p => ({ ...p, hours: e.target.value }))} placeholder="0" style={inputStyle(sessionForm.type === 'study' ? SS.yellow : SS.blue)}/>
+            </div>
+            <div>
+              <label style={labelStyle}>Minutos</label>
+              <input type="number" min="0" max="59" value={sessionForm.minutes} onChange={e => setSessionForm(p => ({ ...p, minutes: e.target.value }))} onKeyDown={e => e.key === 'Enter' && handleAddSession()} placeholder="30" style={inputStyle(sessionForm.type === 'study' ? SS.yellow : SS.blue)}/>
+            </div>
+          </div>
+          <button onClick={handleAddSession} style={{ width:'100%', padding:'10px', background: sessionForm.type === 'study' ? SS.yellow : SS.blue, color:'#060c18', border:'none', borderRadius:10, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>Registrar Sesión</button>
         </Modal>
       )}
     </div>

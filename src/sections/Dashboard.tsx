@@ -60,6 +60,10 @@ export function Dashboard({ state, setSection, toggleHabit }: Props) {
     : 'Sin ayuno';
 
   const currentWeight = state.weightLog.length > 0 ? state.weightLog[state.weightLog.length - 1].kg : 78.5;
+  const startWeight   = state.weightLog.length > 1 ? state.weightLog[0].kg : currentWeight;
+  const weightDiff    = +(currentWeight - startWeight).toFixed(1);
+  const savings       = income - expense;
+  const savingsPct    = income > 0 ? Math.round((Math.max(savings, 0) / income) * 100) : 0;
   const topProjects   = state.projects.slice(0, 3);
   const todayHabits   = state.habits.slice(0, 5).map(h => ({
     ...h,
@@ -78,9 +82,9 @@ export function Dashboard({ state, setSection, toggleHabit }: Props) {
 
       {/* Stat cards: auto-fill handles both mobile and desktop */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))', gap:12, marginBottom:20 }}>
-        <StatCard label="Peso actual" value={`${currentWeight} kg`} sub="Meta: 75 kg · −3.5 kg" color={SS.green} icon="⚖️" sparkData={weightTrend} onClick={() => setSection('salud')}/>
-        <StatCard label="Ayuno hoy" value={fastDisplay} sub={state.fastStartTime ? `${state.fastGoalHours}:8 · En curso` : 'Sin ayuno activo'} color={SS.orange} icon="⏱️" onClick={() => setSection('salud')}/>
-        <StatCard label="Balance" value={`$${totalBalance.toLocaleString()}`} sub="+$1,430 este mes" color={SS.yellow} icon="💰" sparkData={balanceTrend} onClick={() => setSection('finanzas')}/>
+        <StatCard label="Peso actual" value={`${currentWeight} kg`} sub={`Meta: 75 kg · ${weightDiff >= 0 ? '+' : ''}${weightDiff} kg`} color={SS.green} icon="⚖️" sparkData={weightTrend} onClick={() => setSection('salud')}/>
+        <StatCard label="Ayuno hoy" value={fastDisplay} sub={state.fastStartTime ? `${state.fastGoalHours}:${24 - state.fastGoalHours} · En curso` : 'Sin ayuno activo'} color={SS.orange} icon="⏱️" onClick={() => setSection('salud')}/>
+        <StatCard label="Balance" value={`$${totalBalance.toLocaleString()}`} sub={`Ahorro: ${savingsPct}% · $${Math.max(savings,0).toLocaleString()}`} color={SS.yellow} icon="💰" sparkData={balanceTrend} onClick={() => setSection('finanzas')}/>
         <StatCard label="Hábitos" value={`${habitPct}%`} sub={`${completedToday}/${totalHabits} completados hoy`} color={SS.purple} icon="🔥" onClick={() => setSection('habitos')}/>
       </div>
 

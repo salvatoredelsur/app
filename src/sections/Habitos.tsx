@@ -13,6 +13,7 @@ interface Props {
   state: AppState;
   toggleHabit: (id: number, date: string) => void;
   addHabit: (h: Omit<Habit, 'id'>) => void;
+  updateHabit: (id: number, patch: Partial<Omit<Habit, 'id'>>) => void;
   deleteHabit: (id: number) => void;
 }
 
@@ -24,11 +25,14 @@ function getDateStr(daysAgo: number) {
   return d.toISOString().slice(0, 10);
 }
 
-export function Habitos({ state, toggleHabit, addHabit, deleteHabit }: Props) {
+export function Habitos({ state, toggleHabit, addHabit, updateHabit, deleteHabit }: Props) {
   const mobile = useIsMobile();
   const [showModal, setShowModal] = useState(false);
+  const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
   const [newHabitName, setNewHabitName] = useState('');
   const [newHabitColor, setNewHabitColor] = useState<string>(SS.green);
+  const [editName, setEditName] = useState('');
+  const [editColor, setEditColor] = useState<string>(SS.green);
 
   const { habits, habitCompletions } = state;
 
@@ -36,7 +40,6 @@ export function Habitos({ state, toggleHabit, addHabit, deleteHabit }: Props) {
   const possibleTotal  = habits.length * 25;
   const remainingEst   = Math.max(0, possibleTotal - completedTotal);
 
-  // Per-habit streaks
   const habitStreaks = habits.map(h => {
     let streak = 0;
     for (let i = 0; i < 60; i++) {
@@ -47,7 +50,6 @@ export function Habitos({ state, toggleHabit, addHabit, deleteHabit }: Props) {
     return streak;
   });
 
-  // Overall daily streak: consecutive days where at least half habits were done
   const overallStreak = (() => {
     if (habits.length === 0) return 0;
     let streak = 0;
@@ -100,6 +102,23 @@ export function Habitos({ state, toggleHabit, addHabit, deleteHabit }: Props) {
     setNewHabitColor(SS.green);
   };
 
+  const openEdit = (h: Habit) => {
+    setEditingHabit(h);
+    setEditName(h.name);
+    setEditColor(h.color);
+  };
+
+  const handleEditSave = () => {
+    if (!editingHabit || !editName.trim()) return;
+    updateHabit(editingHabit.id, { name: editName.trim(), color: editColor });
+    setEditingHabit(null);
+  };
+
+  const inputStyle = (color: string) => ({
+    width:'100%', background:SS.card2, border:`1px solid ${color}40`, borderRadius:8,
+    padding:'8px 12px', color:'white', fontSize:13, fontFamily:"'DM Sans',sans-serif", outline:'none', marginBottom:12,
+  });
+
   return (
     <div style={{ position:'relative' }}>
       <CircuitBg id="hb" opacity={0.05}/>
@@ -120,7 +139,7 @@ export function Habitos({ state, toggleHabit, addHabit, deleteHabit }: Props) {
         ))}
       </div>
 
-      <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr', gap:14, marginBottom:20 }}>
+      <div style={{ display:'grid', gridTemplateColumns: mobile ? '1fr' : '2fr 1fr', gap:14, marginBottom:20 }}>
         <Card color={SS.green}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
             <CardTitle color={SS.green}>Progreso Diario — Abril</CardTitle>
@@ -146,7 +165,7 @@ export function Habitos({ state, toggleHabit, addHabit, deleteHabit }: Props) {
             <div style={{ display:'flex', alignItems:'flex-end', gap:4, height:50 }}>
               {weekVals.map((v, i) => (
                 <div key={i} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:3 }}>
-                  <div style={{ width:'100%', height:`${Math.max((v/100)*46, 2)}px`, background: habits[i % Math.max(habits.length,1)]?.color || SS.purple, borderRadius:3, boxShadow:`0 0 5px ${habits[i % Math.max(habits.length,1)]?.color || SS.purple}60` }}/>
+                  <div style={{ width:'100%', height:`${Math.max((v/100)*46, 2)}px`, background:SS.purple, borderRadius:3, boxShadow:`0 0 5px ${SS.purple}60`, opacity: 0.4 + (v/100)*0.6 }}/>
                   <span style={{ fontSize:7.5, color:SS.mutedText }}>{WEEK_DAYS[i]}</span>
                 </div>
               ))}
@@ -173,18 +192,8 @@ export function Habitos({ state, toggleHabit, addHabit, deleteHabit }: Props) {
                   const date = getDateStr(24 - di);
                   const done = habitCompletions.some(c => c.habitId === habit.id && c.date === date);
                   return (
-                    <div
-                      key={di}
-                      onClick={() => toggleHabit(habit.id, date)}
-                      title={date}
-                      style={{
-                        width:14, height:14, borderRadius:3, cursor:'pointer',
-                        background: done ? habit.color : 'rgba(255,255,255,0.04)',
-                        border:`1px solid ${done ? habit.color + '50' : 'rgba(255,255,255,0.06)'}`,
-                        boxShadow: done ? `0 0 4px ${habit.color}80` : 'none',
-                        transition:'background .1s',
-                      }}
-                    />
+                    <div key={di} onClick={() => toggleHabit(habit.id, date)} title={date}
+                      style={{ width:14, height:14, borderRadius:3, cursor:'pointer', background: done ? habit.color : 'rgba(255,255,255,0.04)', border:`1px solid ${done ? habit.color + '50' : 'rgba(255,255,255,0.06)'}`, boxShadow: done ? `0 0 4px ${habit.color}80` : 'none', transition:'background .1s' }}/>
                   );
                 })}
               </div>
@@ -207,6 +216,9 @@ export function Habitos({ state, toggleHabit, addHabit, deleteHabit }: Props) {
                 </div>
                 <Bar pct={h.pct} color={h.color} height={3}/>
               </div>
+              <button onClick={() => openEdit(h)} style={{ background:'transparent', border:'none', cursor:'pointer', color:'rgba(255,255,255,0.2)', fontSize:11, padding:'0 2px', lineHeight:1, flexShrink:0 }}
+                onMouseEnter={e => (e.currentTarget.style.color = SS.cyan)}
+                onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.2)')}>✏</button>
               <button onClick={() => deleteHabit(h.id)} style={{ background:'transparent', border:'none', cursor:'pointer', color:'rgba(255,255,255,0.15)', fontSize:12, padding:0, lineHeight:1, flexShrink:0 }}
                 onMouseEnter={e => (e.currentTarget.style.color = SS.red)}
                 onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.15)')}>×</button>
@@ -215,28 +227,54 @@ export function Habitos({ state, toggleHabit, addHabit, deleteHabit }: Props) {
         </div>
       </Card>
 
+      {/* Add habit modal */}
       {showModal && (
-        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.7)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 }} onClick={() => setShowModal(false)}>
-          <div style={{ background:'#0c1828', borderRadius:16, padding:24, minWidth:300, border:`1px solid ${SS.purple}30`, boxShadow:`0 0 40px ${SS.purple}20` }} onClick={e => e.stopPropagation()}>
-            <div style={{ fontSize:14, fontWeight:700, color:'white', marginBottom:16 }}>Nuevo Hábito</div>
-            <label style={{ fontSize:11, color:SS.dimText, display:'block', marginBottom:4 }}>Nombre</label>
-            <input
-              value={newHabitName} onChange={e => setNewHabitName(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleAddHabit()}
-              placeholder="Meditación 10 min..."
-              style={{ width:'100%', background:SS.card2, border:`1px solid ${SS.purple}40`, borderRadius:8, padding:'8px 12px', color:'white', fontSize:13, fontFamily:"'DM Sans',sans-serif", outline:'none', marginBottom:12 }}
-              autoFocus
-            />
-            <label style={{ fontSize:11, color:SS.dimText, display:'block', marginBottom:6 }}>Color</label>
-            <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginBottom:14 }}>
-              {HABIT_COLORS.map(c => (
-                <div key={c} onClick={() => setNewHabitColor(c)} style={{ width:22, height:22, borderRadius:6, background:c, cursor:'pointer', border: newHabitColor === c ? `2px solid white` : `2px solid transparent`, boxShadow: newHabitColor === c ? `0 0 8px ${c}` : 'none', transition:'box-shadow .15s' }}/>
-              ))}
-            </div>
-            <button onClick={handleAddHabit} style={{ width:'100%', padding:'10px', background:SS.purple, color:'white', border:'none', borderRadius:10, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>Crear Hábito</button>
+        <Modal title="Nuevo Hábito" color={SS.purple} onClose={() => setShowModal(false)}>
+          <label style={labelStyle}>Nombre</label>
+          <input value={newHabitName} onChange={e => setNewHabitName(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleAddHabit()}
+            placeholder="Meditación 10 min..." autoFocus style={inputStyle(SS.purple)}/>
+          <label style={labelStyle}>Color</label>
+          <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginBottom:14 }}>
+            {HABIT_COLORS.map(c => (
+              <div key={c} onClick={() => setNewHabitColor(c)}
+                style={{ width:22, height:22, borderRadius:6, background:c, cursor:'pointer', border: newHabitColor === c ? `2px solid white` : `2px solid transparent`, boxShadow: newHabitColor === c ? `0 0 8px ${c}` : 'none' }}/>
+            ))}
           </div>
-        </div>
+          <button onClick={handleAddHabit} style={{ width:'100%', padding:'10px', background:SS.purple, color:'white', border:'none', borderRadius:10, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>Crear Hábito</button>
+        </Modal>
       )}
+
+      {/* Edit habit modal */}
+      {editingHabit && (
+        <Modal title="Editar Hábito" color={editColor} onClose={() => setEditingHabit(null)}>
+          <label style={labelStyle}>Nombre</label>
+          <input value={editName} onChange={e => setEditName(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleEditSave()}
+            placeholder={editingHabit.name} autoFocus style={inputStyle(editColor)}/>
+          <label style={labelStyle}>Color</label>
+          <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginBottom:14 }}>
+            {HABIT_COLORS.map(c => (
+              <div key={c} onClick={() => setEditColor(c)}
+                style={{ width:22, height:22, borderRadius:6, background:c, cursor:'pointer', border: editColor === c ? `2px solid white` : `2px solid transparent`, boxShadow: editColor === c ? `0 0 8px ${c}` : 'none' }}/>
+            ))}
+          </div>
+          <button onClick={handleEditSave} style={{ width:'100%', padding:'10px', background:editColor, color:'white', border:'none', borderRadius:10, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>Guardar cambios</button>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+const labelStyle: React.CSSProperties = { fontSize:11, color:'rgba(255,255,255,0.45)', display:'block', marginBottom:6 };
+
+function Modal({ title, color, onClose, children }: { title:string; color:string; onClose:()=>void; children:React.ReactNode }) {
+  return (
+    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.7)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 }} onClick={onClose}>
+      <div style={{ background:'#0c1828', borderRadius:16, padding:24, minWidth:300, border:`1px solid ${color}30`, boxShadow:`0 0 40px ${color}20` }} onClick={e => e.stopPropagation()}>
+        <div style={{ fontSize:14, fontWeight:700, color:'white', marginBottom:16 }}>{title}</div>
+        {children}
+      </div>
     </div>
   );
 }

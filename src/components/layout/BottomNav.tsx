@@ -5,7 +5,7 @@ const NAV = [
   { id:'salud',         label:'Salud',      icon:'⚖️', color:'#00e896' },
   { id:'productividad', label:'Trabajo',    icon:'📊', color:'#ffe040' },
   { id:'habitos',       label:'Hábitos',    icon:'🔥', color:'#a855f7' },
-  { id:'finanzas',      label:'Finanzas',   icon:'💰', color:'#00e896' },
+  { id:'finanzas',      label:'Finanzas',   icon:'💰', color:'#ffe040' },
 ] as const;
 
 interface Props { active: SectionId; setSection: (s: SectionId) => void; }

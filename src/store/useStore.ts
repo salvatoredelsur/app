@@ -224,6 +224,13 @@ export function useStore() {
     }));
   }, []);
 
+  const updateHabit = useCallback((id: number, patch: Partial<Omit<Habit, 'id'>>) => {
+    setState(s => ({
+      ...s,
+      habits: s.habits.map(h => h.id === id ? { ...h, ...patch } : h),
+    }));
+  }, []);
+
   const toggleStudyTimer = useCallback((subject = 'General') => {
     setState(s => {
       if (s.studyTimerStart) {
@@ -248,6 +255,14 @@ export function useStore() {
       }
       return { ...s, workTimerStart: new Date().toISOString() };
     });
+  }, []);
+
+  const addStudySession = useCallback((subject: string, durationMin: number) => {
+    setState(s => ({ ...s, studySessions: [...s.studySessions, { date: today(), subject, durationMin }] }));
+  }, []);
+
+  const addWorkSession = useCallback((project: string, durationMin: number) => {
+    setState(s => ({ ...s, workSessions: [...s.workSessions, { date: today(), project, durationMin }] }));
   }, []);
 
   const incrementPomodoro = useCallback(() => {
@@ -303,14 +318,14 @@ export function useStore() {
 
   return {
     state, update,
-    toggleHabit, addHabit, deleteHabit,
+    toggleHabit, addHabit, updateHabit, deleteHabit,
     togglePayment, addPayment, deletePayment,
     addWeight,
     toggleFast, setFastGoal,
     addTransaction, deleteTransaction,
     addGoalFunds, addGoal, deleteGoal,
     addProject, updateProject, deleteProject,
-    toggleStudyTimer, toggleWorkTimer, incrementPomodoro,
+    toggleStudyTimer, toggleWorkTimer, addStudySession, addWorkSession, incrementPomodoro,
     updateHealthMetrics,
   };
 }

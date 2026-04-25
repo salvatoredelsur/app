@@ -5,7 +5,7 @@ const NAV_META: Record<SectionId, { label: string; icon: string; color: string }
   salud:         { label:'Salud & Ayuno', icon:'⚖️', color:'#00e896' },
   productividad: { label:'Productividad', icon:'📊', color:'#ffe040' },
   habitos:       { label:'Hábitos',       icon:'🔥', color:'#a855f7' },
-  finanzas:      { label:'Finanzas',      icon:'💰', color:'#00e896' },
+  finanzas:      { label:'Finanzas',      icon:'💰', color:'#ffe040' },
 };
 
 interface Props {
@@ -46,7 +46,7 @@ export function TopBar({ section, mobile, onToggleCollapse }: Props) {
       <div style={{ display:'flex', alignItems:'center', gap:12 }}>
         {!mobile && (
           <div style={{ fontSize:11, color:'rgba(255,255,255,0.3)', letterSpacing:.3 }}>
-            Vie, 25 Abril 2026
+            {new Date().toLocaleDateString('es-MX', { weekday:'short', day:'numeric', month:'long', year:'numeric' }).replace(/^\w/, c => c.toUpperCase())}
           </div>
         )}
         <div style={{ width:8, height:8, borderRadius:4, background:'#00e896', boxShadow:'0 0 8px #00e89699' }}/>

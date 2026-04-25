@@ -16,7 +16,9 @@ interface Props {
   addGoalFunds: (id: number, amount: number) => void;
   deleteTransaction: (id: number) => void;
   addPayment: (p: Omit<Payment, 'id'>) => void;
+  deletePayment: (id: number) => void;
   addGoal: (g: Omit<Goal, 'id'>) => void;
+  deleteGoal: (id: number) => void;
 }
 
 const BALANCE_TREND = [38000,39500,40200,38800,41000,42500,41800,43200,44000,43500,44800,45230];
@@ -43,11 +45,12 @@ function catColor(cat: string) {
 
 type ModalType = 'tx' | 'payment' | 'goal' | 'goalfunds' | null;
 
-export function Finanzas({ state, togglePayment, addTransaction, addGoalFunds, deleteTransaction, addPayment, addGoal }: Props) {
+export function Finanzas({ state, togglePayment, addTransaction, addGoalFunds, deleteTransaction, addPayment, deletePayment, addGoal, deleteGoal }: Props) {
   const mobile = useIsMobile();
   const [modal, setModal]   = useState<ModalType>(null);
   const [goalFundsId, setGoalFundsId] = useState<number | null>(null);
   const [showTxList, setShowTxList]   = useState(false);
+  const [txFilter, setTxFilter] = useState<'all' | 'income' | 'expense'>('all');
 
   const [txForm, setTxForm] = useState({ amount:'', category:'', description:'', type:'expense' as 'income'|'expense' });
   const [goalAmount, setGoalAmount]   = useState('');
@@ -110,7 +113,8 @@ export function Finanzas({ state, togglePayment, addTransaction, addGoalFunds, d
     }
   };
 
-  const recentTx = [...state.transactions].reverse().slice(0, 8);
+  const filteredTx = [...state.transactions].reverse().filter(t => txFilter === 'all' || t.type === txFilter);
+  const recentTx = filteredTx.slice(0, 8);
 
   const inputStyle = (accent: string) => ({
     width:'100%', background:SS.card2, border:`1px solid ${accent}40`, borderRadius:8,
@@ -167,15 +171,23 @@ export function Finanzas({ state, togglePayment, addTransaction, addGoalFunds, d
       </div>
 
       <Card color={SS.cyan} style={{ marginBottom:14 }}>
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
           <CardTitle color={SS.cyan}>Transacciones Recientes</CardTitle>
           <button onClick={() => setShowTxList(v => !v)} style={{ fontSize:10, color:SS.cyan, background:'transparent', border:'none', cursor:'pointer', fontFamily:"'DM Sans',sans-serif", opacity:.7 }}>
             {showTxList ? 'Ver menos' : 'Ver todas'}
           </button>
         </div>
+        <div style={{ display:'flex', gap:6, marginBottom:10 }}>
+          {(['all','income','expense'] as const).map(f => (
+            <button key={f} onClick={() => setTxFilter(f)}
+              style={{ padding:'4px 10px', borderRadius:8, fontSize:10, fontWeight:600, cursor:'pointer', fontFamily:"'DM Sans',sans-serif", border:`1px solid ${txFilter===f ? SS.cyan : 'rgba(255,255,255,0.1)'}`, background: txFilter===f ? `${SS.cyan}20` : 'transparent', color: txFilter===f ? SS.cyan : 'rgba(255,255,255,0.4)' }}>
+              {f === 'all' ? 'Todos' : f === 'income' ? '↑ Ingresos' : '↓ Gastos'}
+            </button>
+          ))}
+        </div>
         {recentTx.length === 0 && <div style={{ fontSize:11, color:SS.dimText }}>Sin transacciones. Añade con + Transacción.</div>}
         <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
-          {(showTxList ? [...state.transactions].reverse() : recentTx).map(t => (
+          {(showTxList ? filteredTx : recentTx).map(t => (
             <div key={t.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 10px', background:SS.card2, borderRadius:10 }}>
               <div style={{ width:8, height:8, borderRadius:2, background: catColor(t.category), flexShrink:0 }}/>
               <div style={{ flex:1, minWidth:0 }}>
@@ -203,21 +215,22 @@ export function Finanzas({ state, togglePayment, addTransaction, addGoalFunds, d
         </div>
         <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
           {state.payments.map((p) => (
-            <div key={p.id}
-              onClick={() => togglePayment(p.id)}
-              style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 12px', background:SS.card2, borderRadius:11, border:`1px solid ${p.urgent && !p.paid ? SS.red + '50' : SS.border}`, cursor:'pointer', opacity: p.paid ? 0.5 : 1, transition:'opacity .2s' }}>
-              <span style={{ fontSize:18 }}>{p.icon}</span>
-              <div style={{ flex:1 }}>
+            <div key={p.id} style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 12px', background:SS.card2, borderRadius:11, border:`1px solid ${p.urgent && !p.paid ? SS.red + '50' : SS.border}`, opacity: p.paid ? 0.5 : 1, transition:'opacity .2s' }}>
+              <span style={{ fontSize:18, cursor:'pointer' }} onClick={() => togglePayment(p.id)}>{p.icon}</span>
+              <div style={{ flex:1, cursor:'pointer' }} onClick={() => togglePayment(p.id)}>
                 <div style={{ fontSize:12, fontWeight:600, color:'rgba(255,255,255,0.85)', textDecoration: p.paid ? 'line-through' : 'none' }}>{p.name}</div>
                 <div style={{ fontSize:9, color:SS.dimText }}>Vence: {p.dueDate}</div>
               </div>
-              <div style={{ textAlign:'right' }}>
+              <div style={{ textAlign:'right', cursor:'pointer' }} onClick={() => togglePayment(p.id)}>
                 <div style={{ fontSize:14, fontWeight:800, color: p.paid ? SS.green : (p.urgent ? SS.red : SS.orange) }}>${p.amount.toLocaleString()}</div>
                 {p.paid
                   ? <span style={{ fontSize:8, color:SS.green }}>✓ Pagado</span>
                   : p.urgent && <span style={{ fontSize:8, color:SS.red, background:`${SS.red}15`, padding:'1px 6px', borderRadius:8, border:`1px solid ${SS.red}40` }}>Urgente</span>
                 }
               </div>
+              <button onClick={() => deletePayment(p.id)} style={{ background:'transparent', border:'none', cursor:'pointer', color:'rgba(255,255,255,0.15)', fontSize:14, padding:'0 2px', lineHeight:1, flexShrink:0 }}
+                onMouseEnter={e => (e.currentTarget.style.color = SS.red)}
+                onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.15)')}>×</button>
             </div>
           ))}
           {state.payments.length === 0 && <div style={{ fontSize:11, color:SS.dimText }}>Sin pagos pendientes. Añade con + Pago.</div>}
@@ -231,18 +244,23 @@ export function Finanzas({ state, togglePayment, addTransaction, addGoalFunds, d
         </div>
         <div style={{ display:'grid', gridTemplateColumns: mobile ? '1fr' : '1fr 1fr', gap:12 }}>
           {state.goals.map((o) => (
-            <div key={o.id} onClick={() => { setGoalFundsId(o.id); setModal('goalfunds'); }} style={{ padding:'12px', background:SS.card2, borderRadius:12, border:`1px solid ${o.color}20`, cursor:'pointer' }}>
-              <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
-                <span style={{ fontSize:20 }}>{o.icon}</span>
-                <div>
-                  <div style={{ fontSize:11, fontWeight:600, color:'rgba(255,255,255,0.85)' }}>{o.name}</div>
-                  <div style={{ fontSize:9, color:SS.dimText }}>${o.current.toLocaleString()} / ${o.target.toLocaleString()}</div>
+            <div key={o.id} style={{ padding:'12px', background:SS.card2, borderRadius:12, border:`1px solid ${o.color}20`, position:'relative' }}>
+              <button onClick={() => deleteGoal(o.id)} style={{ position:'absolute', top:8, right:8, background:'transparent', border:'none', cursor:'pointer', color:'rgba(255,255,255,0.15)', fontSize:14, padding:'0 2px', lineHeight:1 }}
+                onMouseEnter={e => (e.currentTarget.style.color = SS.red)}
+                onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.15)')}>×</button>
+              <div onClick={() => { setGoalFundsId(o.id); setModal('goalfunds'); }} style={{ cursor:'pointer' }}>
+                <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
+                  <span style={{ fontSize:20 }}>{o.icon}</span>
+                  <div>
+                    <div style={{ fontSize:11, fontWeight:600, color:'rgba(255,255,255,0.85)' }}>{o.name}</div>
+                    <div style={{ fontSize:9, color:SS.dimText }}>${o.current.toLocaleString()} / ${o.target.toLocaleString()}</div>
+                  </div>
                 </div>
-              </div>
-              <Bar pct={(o.current/o.target)*100} color={o.color}/>
-              <div style={{ display:'flex', justifyContent:'space-between', marginTop:4 }}>
-                <span style={{ fontSize:9, color:SS.dimText }}>Progreso</span>
-                <span style={{ fontSize:9, fontWeight:700, color:o.color }}>{Math.round((o.current/o.target)*100)}%</span>
+                <Bar pct={(o.current/o.target)*100} color={o.color}/>
+                <div style={{ display:'flex', justifyContent:'space-between', marginTop:4 }}>
+                  <span style={{ fontSize:9, color:SS.dimText }}>Toca para añadir fondos</span>
+                  <span style={{ fontSize:9, fontWeight:700, color:o.color }}>{Math.round((o.current/o.target)*100)}%</span>
+                </div>
               </div>
             </div>
           ))}
