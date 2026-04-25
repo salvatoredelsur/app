@@ -13,22 +13,32 @@ interface Props {
   togglePayment: (id: number) => void;
   addTransaction: (tx: Omit<Transaction, 'id'>) => void;
   addGoalFunds: (id: number, amount: number) => void;
+  deleteTransaction: (id: number) => void;
 }
 
 const BALANCE_TREND = [38000,39500,40200,38800,41000,42500,41800,43200,44000,43500,44800,45230];
 
-const GASTOS_CAT = [
-  { cat:'Vivienda',      pct:46, color:SS.blue,    amount:8500 },
-  { cat:'Alimentación',  pct:16, color:SS.green,   amount:3000 },
-  { cat:'Transporte',    pct:11, color:SS.yellow,  amount:2000 },
-  { cat:'Suscripciones', pct:9,  color:SS.purple,  amount:1760 },
-  { cat:'Salud',         pct:10, color:SS.cyan,    amount:1800 },
-  { cat:'Otros',         pct:8,  color:SS.dimText, amount:1440 },
-];
+const CAT_COLORS: Record<string, string> = {
+  'Vivienda':      SS.blue,
+  'Alimentación':  SS.green,
+  'Transporte':    SS.yellow,
+  'Suscripciones': SS.purple,
+  'Salud':         SS.cyan,
+  'Salario':       SS.green,
+  'Freelance':     SS.cyan,
+  'Crédito':       SS.orange,
+  'Tech':          SS.blue,
+  'Otros':         SS.dimText,
+};
 
-export function Finanzas({ state, togglePayment, addTransaction, addGoalFunds }: Props) {
+function catColor(cat: string) {
+  return CAT_COLORS[cat] ?? SS.silver;
+}
+
+export function Finanzas({ state, togglePayment, addTransaction, addGoalFunds, deleteTransaction }: Props) {
   const [showTxModal, setShowTxModal] = useState(false);
   const [showGoalModal, setShowGoalModal] = useState<number | null>(null);
+  const [showTxList, setShowTxList] = useState(false);
   const [txForm, setTxForm] = useState({ amount:'', category:'', description:'', type:'expense' as 'income'|'expense' });
   const [goalAmount, setGoalAmount] = useState('');
 
@@ -36,6 +46,18 @@ export function Finanzas({ state, togglePayment, addTransaction, addGoalFunds }:
   const expense = state.transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
   const balance = income - expense;
   const savings = income - expense;
+
+  // Compute gastos por categoría from real transactions
+  const gastosCat = (() => {
+    const bycat: Record<string, number> = {};
+    for (const t of state.transactions.filter(t => t.type === 'expense')) {
+      bycat[t.category] = (bycat[t.category] ?? 0) + t.amount;
+    }
+    return Object.entries(bycat)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6)
+      .map(([cat, amount]) => ({ cat, amount, pct: expense > 0 ? Math.round((amount / expense) * 100) : 0, color: catColor(cat) }));
+  })();
 
   const pendingPayments = state.payments.filter(p => !p.paid);
   const pendingTotal    = pendingPayments.reduce((s, p) => s + p.amount, 0);
@@ -64,18 +86,21 @@ export function Finanzas({ state, togglePayment, addTransaction, addGoalFunds }:
     { label:'Descripción', key:'description' as const, placeholder:'Supermercado...', type:'text' },
   ];
 
+  const recentTx = [...state.transactions].reverse().slice(0, 8);
+
   return (
     <div style={{ position:'relative' }}>
       <CircuitBg id="fn" opacity={0.05}/>
       <Blob color={SS.green} top={-40} right={-40}/>
       <SectionHdr title="Finanzas" sub="Balance y objetivos — Abril 2026" color={SS.green} action="+ Transacción" onAction={() => setShowTxModal(true)}/>
 
+      {/* Main stats */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10, marginBottom:20 }}>
         {[
-          { lb:'Balance Total',  val:`$${balance.toLocaleString()}`,  sub:'+$1,430 este mes',        c:SS.green  },
+          { lb:'Balance Total',  val:`$${balance.toLocaleString()}`,  sub:balance >= 0 ? 'Saldo positivo' : 'Saldo negativo', c:balance >= 0 ? SS.green : SS.red },
           { lb:'Ingresos/mes',   val:`$${income.toLocaleString()}`,   sub:'Salario + freelance',      c:SS.cyan   },
-          { lb:'Gastos/mes',     val:`$${expense.toLocaleString()}`,  sub:'−$500 vs mes anterior',    c:SS.orange },
-          { lb:'Ahorro/mes',     val:`$${savings.toLocaleString()}`,  sub:`${income>0?Math.round((savings/income)*100):0}% tasa de ahorro`, c:SS.yellow },
+          { lb:'Gastos/mes',     val:`$${expense.toLocaleString()}`,  sub:'Total egresos',             c:SS.orange },
+          { lb:'Ahorro/mes',     val:`$${Math.max(savings,0).toLocaleString()}`, sub:`${income>0?Math.round((Math.max(savings,0)/income)*100):0}% tasa de ahorro`, c:SS.yellow },
         ].map((s, i) => (
           <Card key={i} color={s.c} style={{ padding:'14px 14px' }}>
             <div style={{ fontSize:9, fontWeight:600, letterSpacing:1, textTransform:'uppercase', color:SS.dimText, marginBottom:4 }}>{s.lb}</div>
@@ -86,6 +111,7 @@ export function Finanzas({ state, togglePayment, addTransaction, addGoalFunds }:
       </div>
 
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14, marginBottom:20 }}>
+        {/* Balance trend */}
         <Card color={SS.green}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
             <CardTitle color={SS.green}>Tendencia de Balance</CardTitle>
@@ -97,10 +123,12 @@ export function Finanzas({ state, togglePayment, addTransaction, addGoalFunds }:
           </div>
         </Card>
 
+        {/* Gastos por categoría — computed from transactions */}
         <Card color={SS.orange}>
           <CardTitle color={SS.orange}>Gastos por Categoría</CardTitle>
-          {GASTOS_CAT.map((g, i) => (
-            <div key={i} style={{ display:'flex', alignItems:'center', gap:8, marginBottom: i < GASTOS_CAT.length - 1 ? 6 : 0 }}>
+          {gastosCat.length === 0 && <div style={{ fontSize:11, color:SS.dimText }}>Sin gastos registrados aún.</div>}
+          {gastosCat.map((g, i) => (
+            <div key={i} style={{ display:'flex', alignItems:'center', gap:8, marginBottom: i < gastosCat.length - 1 ? 6 : 0 }}>
               <div style={{ width:8, height:8, borderRadius:2, background:g.color, flexShrink:0 }}/>
               <span style={{ fontSize:10, color:'rgba(255,255,255,0.7)', flex:1 }}>{g.cat}</span>
               <div style={{ width:80 }}>
@@ -112,6 +140,35 @@ export function Finanzas({ state, togglePayment, addTransaction, addGoalFunds }:
         </Card>
       </div>
 
+      {/* Recent transactions */}
+      <Card color={SS.cyan} style={{ marginBottom:14 }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
+          <CardTitle color={SS.cyan}>Transacciones Recientes</CardTitle>
+          <button onClick={() => setShowTxList(v => !v)} style={{ fontSize:10, color:SS.cyan, background:'transparent', border:'none', cursor:'pointer', fontFamily:"'DM Sans',sans-serif", opacity:.7 }}>
+            {showTxList ? 'Ver menos' : 'Ver todas'}
+          </button>
+        </div>
+        {recentTx.length === 0 && <div style={{ fontSize:11, color:SS.dimText }}>Sin transacciones. Añade con + Transacción.</div>}
+        <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+          {(showTxList ? [...state.transactions].reverse() : recentTx).map(t => (
+            <div key={t.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 10px', background:SS.card2, borderRadius:10 }}>
+              <div style={{ width:8, height:8, borderRadius:2, background: catColor(t.category), flexShrink:0 }}/>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontSize:11, fontWeight:600, color:'rgba(255,255,255,0.85)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{t.description || t.category}</div>
+                <div style={{ fontSize:9, color:SS.dimText }}>{t.category} · {t.date}</div>
+              </div>
+              <span style={{ fontSize:13, fontWeight:700, color: t.type === 'income' ? SS.green : SS.red, flexShrink:0 }}>
+                {t.type === 'income' ? '+' : '−'}${t.amount.toLocaleString()}
+              </span>
+              <button onClick={() => deleteTransaction(t.id)} style={{ background:'transparent', border:'none', cursor:'pointer', color:'rgba(255,255,255,0.2)', fontSize:14, padding:'0 2px', lineHeight:1 }}
+                onMouseEnter={e => (e.currentTarget.style.color = SS.red)}
+                onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.2)')}>×</button>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* Pagos pendientes */}
       <Card color={SS.red} style={{ marginBottom:14 }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
           <CardTitle color={SS.red}>Pagos Pendientes</CardTitle>
@@ -128,7 +185,7 @@ export function Finanzas({ state, togglePayment, addTransaction, addGoalFunds }:
                 <div style={{ fontSize:9, color:SS.dimText }}>Vence: {p.dueDate}</div>
               </div>
               <div style={{ textAlign:'right' }}>
-                <div style={{ fontSize:14, fontWeight:800, color: p.paid ? SS.green : (p.urgent ? SS.red : SS.orange), textShadow:`0 0 10px ${p.paid ? SS.green : SS.orange}80` }}>${p.amount.toLocaleString()}</div>
+                <div style={{ fontSize:14, fontWeight:800, color: p.paid ? SS.green : (p.urgent ? SS.red : SS.orange) }}>${p.amount.toLocaleString()}</div>
                 {p.paid
                   ? <span style={{ fontSize:8, color:SS.green }}>✓ Pagado</span>
                   : p.urgent && <span style={{ fontSize:8, color:SS.red, background:`${SS.red}15`, padding:'1px 6px', borderRadius:8, border:`1px solid ${SS.red}40` }}>Urgente</span>
@@ -139,6 +196,7 @@ export function Finanzas({ state, togglePayment, addTransaction, addGoalFunds }:
         </div>
       </Card>
 
+      {/* Objetivos financieros */}
       <Card color={SS.yellow}>
         <CardTitle color={SS.yellow}>Objetivos Financieros</CardTitle>
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
@@ -161,6 +219,7 @@ export function Finanzas({ state, togglePayment, addTransaction, addGoalFunds }:
         </div>
       </Card>
 
+      {/* + Transacción modal */}
       {showTxModal && (
         <Modal title="Nueva Transacción" color={SS.green} onClose={() => setShowTxModal(false)}>
           <div style={{ display:'flex', gap:8, marginBottom:10 }}>
@@ -177,6 +236,7 @@ export function Finanzas({ state, togglePayment, addTransaction, addGoalFunds }:
                 type={f.type}
                 value={txForm[f.key]} onChange={e => setTxForm(prev => ({ ...prev, [f.key]: e.target.value }))}
                 placeholder={f.placeholder}
+                onKeyDown={e => e.key === 'Enter' && handleAddTx()}
                 style={{ width:'100%', background:SS.card2, border:`1px solid ${SS.green}40`, borderRadius:8, padding:'8px 12px', color:'white', fontSize:13, fontFamily:"'DM Sans',sans-serif", outline:'none' }}
               />
             </div>
@@ -185,14 +245,14 @@ export function Finanzas({ state, togglePayment, addTransaction, addGoalFunds }:
         </Modal>
       )}
 
+      {/* Agregar fondos a objetivo */}
       {showGoalModal !== null && (
         <Modal title="Agregar fondos" color={SS.yellow} onClose={() => setShowGoalModal(null)}>
-          <div style={{ marginBottom:12 }}>
-            <div style={{ fontSize:12, color:'white', fontWeight:600, marginBottom:2 }}>{state.goals.find(g => g.id === showGoalModal)?.name}</div>
-          </div>
+          <div style={{ fontSize:12, color:'white', fontWeight:600, marginBottom:12 }}>{state.goals.find(g => g.id === showGoalModal)?.name}</div>
           <label style={{ fontSize:11, color:SS.dimText, display:'block', marginBottom:6 }}>Monto a agregar ($)</label>
           <input
             type="number" value={goalAmount} onChange={e => setGoalAmount(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleAddGoal()}
             placeholder="500"
             style={{ width:'100%', background:SS.card2, border:`1px solid ${SS.yellow}40`, borderRadius:8, padding:'8px 12px', color:'white', fontSize:14, fontFamily:"'DM Sans',sans-serif", outline:'none' }}
             autoFocus

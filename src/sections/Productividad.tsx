@@ -11,6 +11,8 @@ import { Donut } from '../components/shared/Donut';
 interface Props {
   state: AppState;
   addProject: (p: Omit<Project, 'id'>) => void;
+  updateProject: (id: number, patch: Partial<Omit<Project, 'id'>>) => void;
+  deleteProject: (id: number) => void;
   toggleStudyTimer: (subject?: string) => void;
   toggleWorkTimer: (project?: string) => void;
   incrementPomodoro: () => void;
@@ -37,9 +39,11 @@ function fmt(secs: number) {
   return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
 }
 
-export function Productividad({ state, addProject, toggleStudyTimer, toggleWorkTimer, incrementPomodoro }: Props) {
+export function Productividad({ state, addProject, updateProject, deleteProject, toggleStudyTimer, toggleWorkTimer, incrementPomodoro }: Props) {
   const [showModal, setShowModal] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [form, setForm] = useState<{ name:string; cat:string; deadline:string; color:string }>({ name:'', cat:'', deadline:'', color: SS.cyan });
+  const [editForm, setEditForm] = useState<{ pct:string; done:string; tasks:string }>({ pct:'', done:'', tasks:'' });
   const [studyElapsed, setStudyElapsed] = useState(0);
   const [workElapsed, setWorkElapsed] = useState(0);
 
@@ -199,9 +203,10 @@ export function Productividad({ state, addProject, toggleStudyTimer, toggleWorkT
       {/* Projects list */}
       <Card color={SS.cyan}>
         <CardTitle color={SS.cyan}>Proyectos en Seguimiento</CardTitle>
-        <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+        {state.projects.length === 0 && <div style={{ fontSize:11, color:SS.dimText }}>Sin proyectos. Crea uno con + Proyecto.</div>}
+        <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
           {state.projects.map((p) => (
-            <div key={p.id} style={{ display:'grid', gridTemplateColumns:'1fr auto auto', gap:12, alignItems:'center', padding:'10px 12px', background:SS.card2, borderRadius:12, border:`1px solid ${p.color}18` }}>
+            <div key={p.id} style={{ display:'grid', gridTemplateColumns:'1fr auto auto auto', gap:10, alignItems:'center', padding:'10px 12px', background:SS.card2, borderRadius:12, border:`1px solid ${p.color}18` }}>
               <div>
                 <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:3 }}>
                   <div style={{ width:8, height:8, borderRadius:2, background:p.color, boxShadow:`0 0 6px ${p.color}` }}/>
@@ -221,10 +226,49 @@ export function Productividad({ state, addProject, toggleStudyTimer, toggleWorkT
                 <div style={{ fontSize:9, color:SS.dimText }}>vence</div>
                 <div style={{ fontSize:10, fontWeight:600, color:'rgba(255,255,255,0.6)' }}>{p.deadline}</div>
               </div>
+              <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
+                <button onClick={() => { setEditingProject(p); setEditForm({ pct: String(p.pct), done: String(p.done), tasks: String(p.tasks) }); }} style={{ background:'transparent', border:`1px solid ${p.color}40`, borderRadius:6, cursor:'pointer', color:p.color, fontSize:10, padding:'2px 7px', fontFamily:"'DM Sans',sans-serif" }}>✏️</button>
+                <button onClick={() => deleteProject(p.id)} style={{ background:'transparent', border:'1px solid rgba(255,255,255,0.1)', borderRadius:6, cursor:'pointer', color:'rgba(255,255,255,0.3)', fontSize:10, padding:'2px 7px', fontFamily:"'DM Sans',sans-serif" }}
+                  onMouseEnter={e => (e.currentTarget.style.color = SS.red)}
+                  onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.3)')}>🗑</button>
+              </div>
             </div>
           ))}
         </div>
       </Card>
+
+      {/* Edit project modal */}
+      {editingProject && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.7)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 }} onClick={() => setEditingProject(null)}>
+          <div style={{ background:'#0c1828', borderRadius:16, padding:24, minWidth:300, border:`1px solid ${editingProject.color}30` }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize:14, fontWeight:700, color:'white', marginBottom:4 }}>Editar Proyecto</div>
+            <div style={{ fontSize:11, color:SS.dimText, marginBottom:16 }}>{editingProject.name}</div>
+            {[
+              { label:'Progreso (%)', key:'pct' as const, placeholder:'68' },
+              { label:'Tareas completadas', key:'done' as const, placeholder:'8' },
+              { label:'Total de tareas', key:'tasks' as const, placeholder:'12' },
+            ].map(f => (
+              <div key={f.key} style={{ marginBottom:10 }}>
+                <label style={{ fontSize:11, color:SS.dimText, display:'block', marginBottom:4 }}>{f.label}</label>
+                <input
+                  type="number" min="0" max={f.key==='pct'?100:undefined}
+                  value={editForm[f.key]} onChange={e => setEditForm(prev => ({ ...prev, [f.key]: e.target.value }))}
+                  placeholder={f.placeholder}
+                  style={{ width:'100%', background:SS.card2, border:`1px solid ${editingProject.color}40`, borderRadius:8, padding:'8px 12px', color:'white', fontSize:13, fontFamily:"'DM Sans',sans-serif", outline:'none' }}
+                />
+              </div>
+            ))}
+            <button onClick={() => {
+              updateProject(editingProject.id, {
+                pct:   Math.min(100, Math.max(0, parseInt(editForm.pct)   || 0)),
+                done:  Math.max(0, parseInt(editForm.done)  || 0),
+                tasks: Math.max(0, parseInt(editForm.tasks) || 0),
+              });
+              setEditingProject(null);
+            }} style={{ width:'100%', padding:'10px', background:editingProject.color, color:SS.bg, border:'none', borderRadius:10, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>Guardar</button>
+          </div>
+        </div>
+      )}
 
       {showModal && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.7)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 }} onClick={() => setShowModal(false)}>

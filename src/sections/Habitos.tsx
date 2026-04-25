@@ -12,6 +12,7 @@ interface Props {
   state: AppState;
   toggleHabit: (id: number, date: string) => void;
   addHabit: (h: Omit<Habit, 'id'>) => void;
+  deleteHabit: (id: number) => void;
 }
 
 const WEEK_DAYS = ['L','M','X','J','V','S','D'];
@@ -22,7 +23,7 @@ function getDateStr(daysAgo: number) {
   return d.toISOString().slice(0, 10);
 }
 
-export function Habitos({ state, toggleHabit, addHabit }: Props) {
+export function Habitos({ state, toggleHabit, addHabit, deleteHabit }: Props) {
   const [showModal, setShowModal] = useState(false);
   const [newHabitName, setNewHabitName] = useState('');
   const [newHabitColor, setNewHabitColor] = useState<string>(SS.green);
@@ -195,15 +196,18 @@ export function Habitos({ state, toggleHabit, addHabit }: Props) {
         {topHabits.length === 0 && <div style={{ fontSize:11, color:SS.dimText }}>Sin datos aún.</div>}
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'6px 20px' }}>
           {topHabits.map((h, i) => (
-            <div key={h.id} style={{ display:'flex', alignItems:'center', gap:8 }}>
-              <span style={{ fontSize:10, fontWeight:800, color: i < 3 ? RANK_COLORS[i] : 'rgba(255,255,255,0.25)', width:16 }}>{i+1}</span>
-              <div style={{ flex:1 }}>
+            <div key={h.id} style={{ display:'flex', alignItems:'center', gap:6 }}>
+              <span style={{ fontSize:10, fontWeight:800, color: i < 3 ? RANK_COLORS[i] : 'rgba(255,255,255,0.25)', width:16, flexShrink:0 }}>{i+1}</span>
+              <div style={{ flex:1, minWidth:0 }}>
                 <div style={{ display:'flex', justifyContent:'space-between', marginBottom:2 }}>
-                  <span style={{ fontSize:10, color:'rgba(255,255,255,0.8)', fontWeight:500 }}>{h.name}</span>
-                  <span style={{ fontSize:10, color:h.color, fontWeight:700 }}>{h.pct}%</span>
+                  <span style={{ fontSize:10, color:'rgba(255,255,255,0.8)', fontWeight:500, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', maxWidth:80 }}>{h.name}</span>
+                  <span style={{ fontSize:10, color:h.color, fontWeight:700, flexShrink:0 }}>{h.pct}%</span>
                 </div>
                 <Bar pct={h.pct} color={h.color} height={3}/>
               </div>
+              <button onClick={() => deleteHabit(h.id)} style={{ background:'transparent', border:'none', cursor:'pointer', color:'rgba(255,255,255,0.15)', fontSize:12, padding:0, lineHeight:1, flexShrink:0 }}
+                onMouseEnter={e => (e.currentTarget.style.color = SS.red)}
+                onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.15)')}>×</button>
             </div>
           ))}
         </div>

@@ -242,5 +242,28 @@ export function useStore() {
     setState(s => ({ ...s, pomodoroCount: s.pomodoroCount + 1 }));
   }, []);
 
-  return { state, update, toggleHabit, togglePayment, addWeight, toggleFast, addTransaction, addGoalFunds, addProject, addHabit, toggleStudyTimer, toggleWorkTimer, incrementPomodoro };
+  const updateProject = useCallback((id: number, patch: Partial<Omit<Project, 'id'>>) => {
+    setState(s => ({
+      ...s,
+      projects: s.projects.map(p => p.id === id ? { ...p, ...patch } : p),
+    }));
+  }, []);
+
+  const deleteProject = useCallback((id: number) => {
+    setState(s => ({ ...s, projects: s.projects.filter(p => p.id !== id) }));
+  }, []);
+
+  const deleteHabit = useCallback((id: number) => {
+    setState(s => ({
+      ...s,
+      habits: s.habits.filter(h => h.id !== id),
+      habitCompletions: s.habitCompletions.filter(c => c.habitId !== id),
+    }));
+  }, []);
+
+  const deleteTransaction = useCallback((id: number) => {
+    setState(s => ({ ...s, transactions: s.transactions.filter(t => t.id !== id) }));
+  }, []);
+
+  return { state, update, toggleHabit, togglePayment, addWeight, toggleFast, addTransaction, addGoalFunds, addProject, addHabit, toggleStudyTimer, toggleWorkTimer, incrementPomodoro, updateProject, deleteProject, deleteHabit, deleteTransaction };
 }
