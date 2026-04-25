@@ -11,6 +11,8 @@ export interface Transaction { id: number; date: string; amount: number; categor
 export interface Payment { id: number; name: string; amount: number; dueDate: string; category: string; paid: boolean; icon: string; urgent?: boolean; }
 export interface Goal { id: number; name: string; current: number; target: number; icon: string; color: string; }
 
+export interface HealthMetrics { imc: number; grasa: number; musculo: number; }
+
 export interface AppState {
   section: SectionId;
   sidebarCollapsed: boolean;
@@ -18,6 +20,7 @@ export interface AppState {
   fastGoalHours: number;
   weightLog: WeightEntry[];
   fastLog: FastEntry[];
+  healthMetrics: HealthMetrics;
   habits: Habit[];
   habitCompletions: HabitCompletion[];
   projects: Project[];
@@ -38,6 +41,7 @@ const defaultState: AppState = {
   sidebarCollapsed: false,
   fastStartTime: null,
   fastGoalHours: 16,
+  healthMetrics: { imc: 23.4, grasa: 18.2, musculo: 42.1 },
   studyTimerStart: null,
   workTimerStart: null,
   weightLog: (() => {
@@ -126,7 +130,15 @@ const defaultState: AppState = {
 function loadState(): AppState {
   try {
     const raw = localStorage.getItem('ss_app_state');
-    if (raw) return { ...defaultState, ...JSON.parse(raw) };
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      // Migrate: fill any missing keys from defaultState
+      return {
+        ...defaultState,
+        ...parsed,
+        healthMetrics: { ...defaultState.healthMetrics, ...(parsed.healthMetrics ?? {}) },
+      };
+    }
   } catch { /* ignore */ }
   return defaultState;
 }
@@ -265,5 +277,40 @@ export function useStore() {
     setState(s => ({ ...s, transactions: s.transactions.filter(t => t.id !== id) }));
   }, []);
 
-  return { state, update, toggleHabit, togglePayment, addWeight, toggleFast, addTransaction, addGoalFunds, addProject, addHabit, toggleStudyTimer, toggleWorkTimer, incrementPomodoro, updateProject, deleteProject, deleteHabit, deleteTransaction };
+  const addPayment = useCallback((p: Omit<Payment, 'id'>) => {
+    setState(s => ({ ...s, payments: [...s.payments, { ...p, id: Date.now() }] }));
+  }, []);
+
+  const deletePayment = useCallback((id: number) => {
+    setState(s => ({ ...s, payments: s.payments.filter(p => p.id !== id) }));
+  }, []);
+
+  const addGoal = useCallback((g: Omit<Goal, 'id'>) => {
+    setState(s => ({ ...s, goals: [...s.goals, { ...g, id: Date.now() }] }));
+  }, []);
+
+  const deleteGoal = useCallback((id: number) => {
+    setState(s => ({ ...s, goals: s.goals.filter(g => g.id !== id) }));
+  }, []);
+
+  const updateHealthMetrics = useCallback((patch: Partial<HealthMetrics>) => {
+    setState(s => ({ ...s, healthMetrics: { ...s.healthMetrics, ...patch } }));
+  }, []);
+
+  const setFastGoal = useCallback((hours: number) => {
+    setState(s => ({ ...s, fastGoalHours: hours }));
+  }, []);
+
+  return {
+    state, update,
+    toggleHabit, addHabit, deleteHabit,
+    togglePayment, addPayment, deletePayment,
+    addWeight,
+    toggleFast, setFastGoal,
+    addTransaction, deleteTransaction,
+    addGoalFunds, addGoal, deleteGoal,
+    addProject, updateProject, deleteProject,
+    toggleStudyTimer, toggleWorkTimer, incrementPomodoro,
+    updateHealthMetrics,
+  };
 }

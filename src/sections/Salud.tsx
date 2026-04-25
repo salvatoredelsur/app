@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import type { AppState } from '../store/useStore';
+import type { AppState, HealthMetrics } from '../store/useStore';
+import { useIsMobile } from '../hooks/useIsMobile';
 import { SS } from '../tokens';
 import { CircuitBg } from '../components/shared/CircuitBg';
 import { Blob } from '../components/shared/Blob';
@@ -13,12 +14,23 @@ interface Props {
   state: AppState;
   toggleFast: () => void;
   addWeight: (kg: number) => void;
+  setFastGoal: (h: number) => void;
+  updateHealthMetrics: (patch: Partial<HealthMetrics>) => void;
 }
 
-export function Salud({ state, toggleFast, addWeight }: Props) {
+export function Salud({ state, toggleFast, addWeight, setFastGoal, updateHealthMetrics }: Props) {
+  const mobile = useIsMobile();
   const [elapsed, setElapsed] = useState(0);
   const [showWeightModal, setShowWeightModal] = useState(false);
+  const [showMetricsModal, setShowMetricsModal] = useState(false);
+  const [showFastModal, setShowFastModal] = useState(false);
   const [weightInput, setWeightInput] = useState('');
+  const [fastGoalInput, setFastGoalInput] = useState(String(state.fastGoalHours));
+  const [metricsForm, setMetricsForm] = useState({
+    imc: String(state.healthMetrics.imc),
+    grasa: String(state.healthMetrics.grasa),
+    musculo: String(state.healthMetrics.musculo),
+  });
 
   useEffect(() => {
     if (!state.fastStartTime) { setElapsed(0); return; }
@@ -28,36 +40,52 @@ export function Salud({ state, toggleFast, addWeight }: Props) {
     return () => clearInterval(id);
   }, [state.fastStartTime]);
 
-  const fastH = elapsed;
+  const fastH    = elapsed;
   const fastGoal = state.fastGoalHours;
-  const fastPct = (fastH / fastGoal) * 100;
-  const fastFloorH = Math.floor(fastH);
-  const fastRemM = Math.round((fastH % 1) * 60);
+  const fastPct  = (fastH / fastGoal) * 100;
+  const fFloor   = Math.floor(fastH);
+  const fMin     = Math.round((fastH % 1) * 60);
 
-  const weightData = state.weightLog.slice(-30).map(e => e.kg);
+  const weightData    = state.weightLog.slice(-30).map(e => e.kg);
   const currentWeight = weightData.length > 0 ? weightData[weightData.length - 1] : 78.5;
-  const startWeight = weightData.length > 0 ? weightData[0] : 82.0;
-  const weightDiff = +(currentWeight - startWeight).toFixed(1);
-  const weightGoal = 75;
-  const weightPct = Math.max(0, Math.min(100, Math.round(((startWeight - currentWeight) / (startWeight - weightGoal)) * 100)));
+  const startWeight   = weightData.length > 0 ? weightData[0] : 82.0;
+  const weightDiff    = +(currentWeight - startWeight).toFixed(1);
+  const weightGoal    = 75;
+  const weightPct     = Math.max(0, Math.min(100, Math.round(((startWeight - currentWeight) / (startWeight - weightGoal)) * 100)));
 
   const fastStreak = (() => {
-    let streak = 0;
+    let n = 0;
     const sorted = [...state.fastLog].sort((a, b) => b.date.localeCompare(a.date));
-    for (const e of sorted) { if (e.completed) streak++; else break; }
-    return streak;
+    for (const e of sorted) { if (e.completed) n++; else break; }
+    return n;
   })();
 
+  const { imc, grasa, musculo } = state.healthMetrics;
+
   const metrics = [
-    { label:'Peso actual', value:`${currentWeight}`, unit:'kg', color:SS.green,  goal:'Meta: 75 kg', pct: weightPct },
-    { label:'IMC',         value:'23.4', unit:'',    color:SS.cyan,   goal:'Normal ✓',    pct:100 },
-    { label:'Grasa corp.', value:'18.2', unit:'%',   color:SS.yellow, goal:'Meta: <15%',  pct:72  },
-    { label:'Músculo',     value:'42.1', unit:'%',   color:SS.blue,   goal:'Meta: >45%',  pct:80  },
+    { label:'Peso actual', value:`${currentWeight}`, unit:'kg', color:SS.green,  goal:'Meta: 75 kg',  pct: weightPct, action: () => setShowWeightModal(true) },
+    { label:'IMC',         value:`${imc}`,           unit:'',  color:SS.cyan,   goal:'Normal ✓',     pct:100,        action: () => setShowMetricsModal(true) },
+    { label:'Grasa corp.', value:`${grasa}`,          unit:'%', color:SS.yellow, goal:'Meta: <15%',   pct: Math.round((15 / grasa) * 100), action: () => setShowMetricsModal(true) },
+    { label:'Músculo',     value:`${musculo}`,         unit:'%', color:SS.blue,   goal:'Meta: >45%',   pct: Math.round((musculo / 45) * 100), action: () => setShowMetricsModal(true) },
   ];
 
   const handleWeightSave = () => {
     const v = parseFloat(weightInput);
     if (!isNaN(v) && v > 30 && v < 300) { addWeight(v); setShowWeightModal(false); setWeightInput(''); }
+  };
+
+  const handleMetricsSave = () => {
+    updateHealthMetrics({
+      imc:     parseFloat(metricsForm.imc)     || imc,
+      grasa:   parseFloat(metricsForm.grasa)   || grasa,
+      musculo: parseFloat(metricsForm.musculo) || musculo,
+    });
+    setShowMetricsModal(false);
+  };
+
+  const handleFastGoalSave = () => {
+    const h = parseFloat(fastGoalInput);
+    if (!isNaN(h) && h >= 12 && h <= 23) { setFastGoal(h); setShowFastModal(false); }
   };
 
   return (
@@ -66,36 +94,44 @@ export function Salud({ state, toggleFast, addWeight }: Props) {
       <Blob color={SS.green} top={-40} right={20}/>
       <SectionHdr title="Salud & Ayuno" sub="Métricas corporales y seguimiento" color={SS.green} action="+ Registrar" onAction={() => setShowWeightModal(true)}/>
 
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10, marginBottom:20 }}>
+      {/* Metrics 4-col → 2-col on mobile */}
+      <div style={{ display:'grid', gridTemplateColumns: mobile ? '1fr 1fr' : 'repeat(4,1fr)', gap:10, marginBottom:20 }}>
         {metrics.map((m, i) => (
-          <Card key={i} color={m.color} style={{ textAlign:'center', padding:'14px 10px' }}>
+          <Card key={i} color={m.color} style={{ textAlign:'center', padding:'14px 10px', cursor:'pointer' }} onClick={m.action}>
             <div style={{ fontSize:9, fontWeight:600, letterSpacing:1, textTransform:'uppercase', color:SS.dimText, marginBottom:6 }}>{m.label}</div>
             <div style={{ fontSize:24, fontWeight:900, color:m.color, textShadow:`0 0 18px ${m.color}88`, lineHeight:1 }}>
               {m.value}<span style={{ fontSize:13, fontWeight:500, marginLeft:2 }}>{m.unit}</span>
             </div>
             <div style={{ fontSize:9, color:SS.dimText, marginTop:4, marginBottom:8 }}>{m.goal}</div>
-            <Bar pct={m.pct} color={m.color} height={4}/>
+            <Bar pct={Math.min(m.pct, 100)} color={m.color} height={4}/>
           </Card>
         ))}
       </div>
 
-      <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr', gap:14, marginBottom:20 }}>
+      <div style={{ display:'grid', gridTemplateColumns: mobile ? '1fr' : '2fr 1fr', gap:14, marginBottom:20 }}>
         <Card color={SS.green}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
             <CardTitle color={SS.green}>Tendencia de Peso — 30 días</CardTitle>
-            <span style={{ fontSize:11, color:SS.green, fontWeight:700 }}>{weightDiff >= 0 ? '+' : ''}{weightDiff} kg {weightDiff < 0 ? '↓' : '↑'}</span>
+            <span style={{ fontSize:11, color: weightDiff < 0 ? SS.green : SS.red, fontWeight:700 }}>
+              {weightDiff >= 0 ? '+' : ''}{weightDiff} kg {weightDiff < 0 ? '↓' : '↑'}
+            </span>
           </div>
-          <Sparkline data={weightData.length >= 2 ? weightData : [82,78.5]} color={SS.green} width={360} height={80} filled/>
+          <div style={{ width:'100%', overflowX:'hidden' }}>
+            <Sparkline data={weightData.length >= 2 ? weightData : [82,78.5]} color={SS.green} width={mobile ? 280 : 380} height={80} filled/>
+          </div>
           <div style={{ display:'flex', justifyContent:'space-between', marginTop:4 }}>
-            {['1 Abr','8 Abr','15 Abr','22 Abr','Hoy'].map(d => <span key={d} style={{ fontSize:8, color:SS.mutedText }}>{d}</span>)}
+            {['Inicio','','','','Hoy'].map((d, i) => <span key={i} style={{ fontSize:8, color:SS.mutedText }}>{d}</span>)}
           </div>
           <div style={{ display:'flex', gap:20, marginTop:12 }}>
             {[
-              { l:'Inicio', v:`${startWeight} kg`, c:'rgba(255,255,255,0.4)' },
+              { l:'Inicio', v:`${startWeight} kg`,   c:'rgba(255,255,255,0.4)' },
               { l:'Actual',  v:`${currentWeight} kg`, c:SS.green },
-              { l:'Meta',    v:`${weightGoal}.0 kg`, c:SS.cyan },
+              { l:'Meta',    v:`${weightGoal} kg`,    c:SS.cyan },
             ].map((x, i) => (
-              <div key={i}><div style={{ fontSize:9, color:SS.dimText }}>{x.l}</div><div style={{ fontSize:13, fontWeight:700, color:x.c }}>{x.v}</div></div>
+              <div key={i}>
+                <div style={{ fontSize:9, color:SS.dimText }}>{x.l}</div>
+                <div style={{ fontSize:13, fontWeight:700, color:x.c }}>{x.v}</div>
+              </div>
             ))}
           </div>
         </Card>
@@ -104,45 +140,54 @@ export function Salud({ state, toggleFast, addWeight }: Props) {
           <CardTitle color={SS.cyan}>Meta Corporal</CardTitle>
           <Donut pct={weightPct || 61} color={SS.green} size={100} stroke={11} label={`${currentWeight}`} sublabel="kg"/>
           <div style={{ textAlign:'center' }}>
-            <div style={{ fontSize:11, color:SS.dimText }}>Faltan <span style={{ color:SS.green, fontWeight:700 }}>{Math.max(0, +(currentWeight - weightGoal).toFixed(1))} kg</span></div>
-            <div style={{ fontSize:10, color:SS.mutedText }}>Meta: {weightGoal} kg · ~7 semanas</div>
+            <div style={{ fontSize:11, color:SS.dimText }}>
+              Faltan <span style={{ color:SS.green, fontWeight:700 }}>{Math.max(0, +(currentWeight - weightGoal).toFixed(1))} kg</span>
+            </div>
+            <div style={{ fontSize:10, color:SS.mutedText }}>Meta: {weightGoal} kg · ~{Math.ceil(Math.max(0, currentWeight - weightGoal) / 0.5)} semanas</div>
           </div>
         </Card>
       </div>
 
+      {/* Ayuno */}
       <Card color={SS.orange}>
-        <div style={{ display:'grid', gridTemplateColumns:'auto 1fr auto', gap:24, alignItems:'center' }}>
-          <div style={{ position:'relative', display:'flex', alignItems:'center', justifyContent:'center' }}>
+        <div style={{ display:'grid', gridTemplateColumns: mobile ? '1fr' : 'auto 1fr auto', gap:mobile ? 16 : 24, alignItems:'center' }}>
+          <div style={{ display:'flex', justifyContent:'center' }}>
             <Donut pct={Math.min(fastPct, 100)} color={SS.orange} size={120} stroke={12}
-              label={state.fastStartTime ? `${fastFloorH}h ${fastRemM}m` : '0h 0m'}
+              label={state.fastStartTime ? `${fFloor}h ${fMin}m` : '0h 0m'}
               sublabel={`/ ${fastGoal}h`}/>
           </div>
           <div>
             <div style={{ fontSize:10, fontWeight:700, letterSpacing:1.2, textTransform:'uppercase', color:SS.orange, marginBottom:6 }}>
-              {state.fastStartTime ? 'Ayuno Activo — 16:8' : 'Sin Ayuno Activo'}
+              {state.fastStartTime ? `Ayuno Activo — ${fastGoal}:${24 - fastGoal}` : 'Sin Ayuno Activo'}
             </div>
             <div style={{ fontSize:20, fontWeight:800, color:'white', marginBottom:4 }}>
-              {state.fastStartTime ? `${fastFloorH}h ${fastRemM}min transcurridos` : 'Inicia tu ayuno'}
+              {state.fastStartTime ? `${fFloor}h ${fMin}min transcurridos` : 'Inicia tu ayuno'}
             </div>
             {state.fastStartTime && (
               <div style={{ fontSize:11, color:SS.dimText, marginBottom:12 }}>
-                Inicio: {new Date(state.fastStartTime).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})} · Meta: {fastGoal}h
+                Inicio: {new Date(state.fastStartTime).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})}
+                {' · '}
+                Meta: {new Date(new Date(state.fastStartTime).getTime() + fastGoal * 3600000).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})}
               </div>
             )}
             <Bar pct={Math.min(fastPct, 100)} color={SS.orange} height={6}/>
+            {fastPct >= 100 && (
+              <div style={{ fontSize:11, color:SS.green, marginTop:6, fontWeight:600 }}>✓ ¡Ayuno completado!</div>
+            )}
           </div>
-          <div style={{ display:'flex', flexDirection:'column', gap:8, alignItems:'center' }}>
-            <button
-              onClick={toggleFast}
-              style={{
-                padding:'8px 16px', borderRadius:10, border:`1px solid ${state.fastStartTime ? SS.red : SS.orange}50`, cursor:'pointer',
-                background: state.fastStartTime ? `${SS.red}22` : `${SS.orange}22`,
-                color: state.fastStartTime ? SS.red : SS.orange,
-                fontSize:11, fontWeight:600, fontFamily:"'DM Sans',sans-serif",
-              }}
-            >
+          <div style={{ display:'flex', flexDirection: mobile ? 'row' : 'column', gap:8, alignItems:'center', justifyContent:'center' }}>
+            <button onClick={toggleFast} style={{
+              padding:'8px 16px', borderRadius:10, border:`1px solid ${state.fastStartTime ? SS.red : SS.orange}50`, cursor:'pointer',
+              background: state.fastStartTime ? `${SS.red}22` : `${SS.orange}22`,
+              color: state.fastStartTime ? SS.red : SS.orange,
+              fontSize:11, fontWeight:600, fontFamily:"'DM Sans',sans-serif",
+            }}>
               {state.fastStartTime ? '⏹ Romper' : '▶ Iniciar'}
             </button>
+            <button onClick={() => setShowFastModal(true)} style={{
+              padding:'6px 12px', borderRadius:10, border:`1px solid rgba(255,255,255,0.1)`, cursor:'pointer',
+              background:'transparent', color:SS.dimText, fontSize:10, fontWeight:500, fontFamily:"'DM Sans',sans-serif",
+            }}>⚙ {fastGoal}h</button>
             <div style={{ textAlign:'center' }}>
               <div style={{ fontSize:16, fontWeight:800, color:SS.yellow }}>{fastStreak}</div>
               <div style={{ fontSize:8, color:SS.dimText }}>días racha</div>
@@ -155,8 +200,8 @@ export function Salud({ state, toggleFast, addWeight }: Props) {
           <div style={{ display:'flex', gap:4, flexWrap:'wrap' }}>
             {state.fastLog.slice(-28).map((d, i) => (
               <div key={i} title={`Día ${i+1}: ${d.pct}%`} style={{
-                width:24, height:24, borderRadius:6,
-                background: d.completed ? SS.orange : 'rgba(255,255,255,0.04)',
+                width:26, height:26, borderRadius:6,
+                background: d.completed ? SS.orange : d.pct > 0 ? `${SS.orange}44` : 'rgba(255,255,255,0.04)',
                 border:`1px solid ${d.completed ? SS.orange + '60' : 'rgba(255,255,255,0.07)'}`,
                 display:'flex', alignItems:'center', justifyContent:'center',
                 fontSize:8, color: d.completed ? SS.bg : 'rgba(255,255,255,0.2)', fontWeight:700,
@@ -167,27 +212,80 @@ export function Salud({ state, toggleFast, addWeight }: Props) {
         </div>
       </Card>
 
+      {/* Modals */}
       {showWeightModal && (
         <Modal title="Registrar Peso" color={SS.green} onClose={() => setShowWeightModal(false)}>
-          <label style={{ fontSize:11, color:SS.dimText, display:'block', marginBottom:6 }}>Peso (kg)</label>
-          <input
-            type="number" step="0.1" min="30" max="300"
-            value={weightInput} onChange={e => setWeightInput(e.target.value)}
-            placeholder="78.5"
-            style={{ width:'100%', background:SS.card2, border:`1px solid ${SS.green}40`, borderRadius:8, padding:'8px 12px', color:'white', fontSize:14, fontFamily:"'DM Sans',sans-serif", outline:'none' }}
-            autoFocus
-          />
-          <button onClick={handleWeightSave} style={{ marginTop:12, width:'100%', padding:'10px', background:SS.green, color:SS.bg, border:'none', borderRadius:10, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>Guardar</button>
+          <label style={labelStyle}>Peso (kg)</label>
+          <input type="number" step="0.1" min="30" max="300" value={weightInput}
+            onChange={e => setWeightInput(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleWeightSave()}
+            placeholder={`${currentWeight}`} autoFocus style={inputStyle(SS.green)}/>
+          <Btn color={SS.green} onClick={handleWeightSave}>Guardar</Btn>
+        </Modal>
+      )}
+
+      {showMetricsModal && (
+        <Modal title="Editar Métricas" color={SS.cyan} onClose={() => setShowMetricsModal(false)}>
+          {[
+            { label:'IMC', key:'imc' as const, placeholder:'23.4' },
+            { label:'Grasa corporal (%)', key:'grasa' as const, placeholder:'18.2' },
+            { label:'Músculo (%)', key:'musculo' as const, placeholder:'42.1' },
+          ].map(f => (
+            <div key={f.key} style={{ marginBottom:10 }}>
+              <label style={labelStyle}>{f.label}</label>
+              <input type="number" step="0.1" value={metricsForm[f.key]}
+                onChange={e => setMetricsForm(p => ({ ...p, [f.key]: e.target.value }))}
+                onKeyDown={e => e.key === 'Enter' && handleMetricsSave()}
+                placeholder={f.placeholder} style={inputStyle(SS.cyan)}/>
+            </div>
+          ))}
+          <Btn color={SS.cyan} onClick={handleMetricsSave}>Guardar</Btn>
+        </Modal>
+      )}
+
+      {showFastModal && (
+        <Modal title="Meta de Ayuno" color={SS.orange} onClose={() => setShowFastModal(false)}>
+          <label style={labelStyle}>Horas de ayuno (12–23)</label>
+          <input type="number" min="12" max="23" step="1" value={fastGoalInput}
+            onChange={e => setFastGoalInput(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleFastGoalSave()}
+            placeholder="16" autoFocus style={inputStyle(SS.orange)}/>
+          <div style={{ display:'flex', gap:8, marginBottom:12, flexWrap:'wrap' }}>
+            {[12,14,16,18,20,23].map(h => (
+              <button key={h} onClick={() => setFastGoalInput(String(h))} style={{
+                padding:'5px 12px', borderRadius:8, border:`1px solid ${fastGoalInput===String(h)?SS.orange:'rgba(255,255,255,0.1)'}`,
+                background: fastGoalInput===String(h)?`${SS.orange}22`:'transparent',
+                color: fastGoalInput===String(h)?SS.orange:'rgba(255,255,255,0.5)',
+                fontSize:11, cursor:'pointer', fontFamily:"'DM Sans',sans-serif",
+              }}>{h}h</button>
+            ))}
+          </div>
+          <Btn color={SS.orange} onClick={handleFastGoalSave}>Guardar</Btn>
         </Modal>
       )}
     </div>
   );
 }
 
-function Modal({ title, color, onClose, children }: { title: string; color: string; onClose: () => void; children: React.ReactNode }) {
+const labelStyle: React.CSSProperties = { fontSize:11, color:'rgba(255,255,255,0.45)', display:'block', marginBottom:6 };
+const inputStyle = (color: string): React.CSSProperties => ({
+  width:'100%', background:'#0f2038', border:`1px solid ${color}40`, borderRadius:8,
+  padding:'8px 12px', color:'white', fontSize:13, fontFamily:"'DM Sans',sans-serif",
+  outline:'none', marginBottom:12,
+});
+
+function Btn({ color, onClick, children }: { color:string; onClick:()=>void; children:React.ReactNode }) {
   return (
-    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.7)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 }} onClick={onClose}>
-      <div style={{ background:'#0c1828', borderRadius:16, padding:24, minWidth:280, border:`1px solid ${color}30`, boxShadow:`0 0 40px ${color}20` }} onClick={e => e.stopPropagation()}>
+    <button onClick={onClick} style={{ width:'100%', padding:'10px', background:color, color:'#060c18', border:'none', borderRadius:10, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>
+      {children}
+    </button>
+  );
+}
+
+function Modal({ title, color, onClose, children }: { title:string; color:string; onClose:()=>void; children:React.ReactNode }) {
+  return (
+    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.75)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 }} onClick={onClose}>
+      <div style={{ background:'#0c1828', borderRadius:16, padding:24, minWidth:300, maxWidth:380, width:'90%', border:`1px solid ${color}30`, boxShadow:`0 0 40px ${color}20` }} onClick={e => e.stopPropagation()}>
         <div style={{ fontSize:14, fontWeight:700, color:'white', marginBottom:16 }}>{title}</div>
         {children}
       </div>

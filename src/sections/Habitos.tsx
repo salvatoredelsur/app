@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { AppState, Habit } from '../store/useStore';
+import { useIsMobile } from '../hooks/useIsMobile';
 import { SS } from '../tokens';
 import { CircuitBg } from '../components/shared/CircuitBg';
 import { Blob } from '../components/shared/Blob';
@@ -24,6 +25,7 @@ function getDateStr(daysAgo: number) {
 }
 
 export function Habitos({ state, toggleHabit, addHabit, deleteHabit }: Props) {
+  const mobile = useIsMobile();
   const [showModal, setShowModal] = useState(false);
   const [newHabitName, setNewHabitName] = useState('');
   const [newHabitColor, setNewHabitColor] = useState<string>(SS.green);
@@ -104,7 +106,7 @@ export function Habitos({ state, toggleHabit, addHabit, deleteHabit }: Props) {
       <Blob color={SS.purple} top={-40} right={-20}/>
       <SectionHdr title="Hábitos Diarios" sub={`Abril 2026 · ${avgPct}% completado`} color={SS.purple} action="+ Hábito" onAction={() => setShowModal(true)}/>
 
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10, marginBottom:20 }}>
+      <div style={{ display:'grid', gridTemplateColumns: mobile ? '1fr 1fr' : 'repeat(4,1fr)', gap:10, marginBottom:20 }}>
         {[
           { lb:'Completados', val: String(completedTotal), c:SS.green  },
           { lb:'Restantes',   val: String(remainingEst),   c:SS.pink   },

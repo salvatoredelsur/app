@@ -28,13 +28,13 @@ export default function App() {
       case 'dashboard':
         return <Dashboard state={state} setSection={setSection} toggleHabit={store.toggleHabit}/>;
       case 'salud':
-        return <Salud state={state} toggleFast={store.toggleFast} addWeight={store.addWeight}/>;
+        return <Salud state={state} toggleFast={store.toggleFast} addWeight={store.addWeight} setFastGoal={store.setFastGoal} updateHealthMetrics={store.updateHealthMetrics}/>;
       case 'productividad':
         return <Productividad state={state} addProject={store.addProject} updateProject={store.updateProject} deleteProject={store.deleteProject} toggleStudyTimer={store.toggleStudyTimer} toggleWorkTimer={store.toggleWorkTimer} incrementPomodoro={store.incrementPomodoro}/>;
       case 'habitos':
         return <Habitos state={state} toggleHabit={store.toggleHabit} addHabit={store.addHabit} deleteHabit={store.deleteHabit}/>;
       case 'finanzas':
-        return <Finanzas state={state} togglePayment={store.togglePayment} addTransaction={store.addTransaction} addGoalFunds={store.addGoalFunds} deleteTransaction={store.deleteTransaction}/>;
+        return <Finanzas state={state} togglePayment={store.togglePayment} addTransaction={store.addTransaction} addGoalFunds={store.addGoalFunds} deleteTransaction={store.deleteTransaction} addPayment={store.addPayment} addGoal={store.addGoal}/>;
       default:
         return <Dashboard state={state} setSection={setSection} toggleHabit={store.toggleHabit}/>;
     }
