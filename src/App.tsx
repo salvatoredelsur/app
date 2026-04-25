@@ -26,17 +26,17 @@ export default function App() {
   const renderSection = () => {
     switch (state.section) {
       case 'dashboard':
-        return <Dashboard state={state} setSection={setSection} toggleHabit={store.toggleHabit}/>;
+        return <Dashboard state={state} setSection={setSection} toggleHabit={store.toggleHabit} setNote={store.setNote}/>;
       case 'salud':
         return <Salud state={state} toggleFast={store.toggleFast} addWeight={store.addWeight} setFastGoal={store.setFastGoal} updateHealthMetrics={store.updateHealthMetrics}/>;
       case 'productividad':
-        return <Productividad state={state} addProject={store.addProject} updateProject={store.updateProject} deleteProject={store.deleteProject} toggleStudyTimer={store.toggleStudyTimer} toggleWorkTimer={store.toggleWorkTimer} addStudySession={store.addStudySession} addWorkSession={store.addWorkSession} incrementPomodoro={store.incrementPomodoro}/>;
+        return <Productividad state={state} addProject={store.addProject} updateProject={store.updateProject} deleteProject={store.deleteProject} toggleStudyTimer={store.toggleStudyTimer} toggleWorkTimer={store.toggleWorkTimer} addStudySession={store.addStudySession} addWorkSession={store.addWorkSession} incrementPomodoro={store.incrementPomodoro} resetPomodoro={store.resetPomodoro}/>;
       case 'habitos':
         return <Habitos state={state} toggleHabit={store.toggleHabit} addHabit={store.addHabit} updateHabit={store.updateHabit} deleteHabit={store.deleteHabit}/>;
       case 'finanzas':
         return <Finanzas state={state} togglePayment={store.togglePayment} addTransaction={store.addTransaction} addGoalFunds={store.addGoalFunds} deleteTransaction={store.deleteTransaction} addPayment={store.addPayment} deletePayment={store.deletePayment} addGoal={store.addGoal} deleteGoal={store.deleteGoal}/>;
       default:
-        return <Dashboard state={state} setSection={setSection} toggleHabit={store.toggleHabit}/>;
+        return <Dashboard state={state} setSection={setSection} toggleHabit={store.toggleHabit} setNote={store.setNote}/>;
     }
   };
 

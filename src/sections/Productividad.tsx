@@ -20,6 +20,7 @@ interface Props {
   addStudySession: (subject: string, durationMin: number) => void;
   addWorkSession: (project: string, durationMin: number) => void;
   incrementPomodoro: () => void;
+  resetPomodoro: () => void;
 }
 
 const WEEK_LABELS = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
@@ -44,7 +45,7 @@ function getDateStr(daysAgo: number) {
   return d.toISOString().slice(0, 10);
 }
 
-export function Productividad({ state, addProject, updateProject, deleteProject, toggleStudyTimer, toggleWorkTimer, addStudySession, addWorkSession, incrementPomodoro }: Props) {
+export function Productividad({ state, addProject, updateProject, deleteProject, toggleStudyTimer, toggleWorkTimer, addStudySession, addWorkSession, incrementPomodoro, resetPomodoro }: Props) {
   const mobile = useIsMobile();
   const [showModal, setShowModal] = useState(false);
   const [showSessionModal, setShowSessionModal] = useState(false);
@@ -188,9 +189,14 @@ export function Productividad({ state, addProject, updateProject, deleteProject,
               {state.pomodoroCount}<span style={{ fontSize:13, fontWeight:500, color:SS.dimText }}>/10</span>
             </div>
           </div>
-          <button onClick={incrementPomodoro} style={{ padding:'8px 14px', borderRadius:10, border:`1px solid ${SS.cyan}50`, background:`${SS.cyan}22`, color:SS.cyan, fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:"'DM Sans',sans-serif", whiteSpace:'nowrap' }}>
-            + 1 🍅
-          </button>
+          <div style={{ display:'flex', flexDirection:'column', gap:6, alignItems:'flex-end' }}>
+            <button onClick={incrementPomodoro} style={{ padding:'8px 14px', borderRadius:10, border:`1px solid ${SS.cyan}50`, background:`${SS.cyan}22`, color:SS.cyan, fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:"'DM Sans',sans-serif", whiteSpace:'nowrap' }}>
+              + 1 🍅
+            </button>
+            <button onClick={resetPomodoro} style={{ padding:'3px 10px', borderRadius:8, border:'1px solid rgba(255,255,255,0.08)', background:'transparent', color:'rgba(255,255,255,0.25)', fontSize:9, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}
+              onMouseEnter={e => (e.currentTarget.style.color = SS.red)}
+              onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.25)')}>↺ reset</button>
+          </div>
         </Card>
       </div>
 

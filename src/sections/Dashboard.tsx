@@ -14,6 +14,7 @@ interface Props {
   state: AppState;
   setSection: (s: SectionId) => void;
   toggleHabit: (id: number, date: string) => void;
+  setNote: (date: string, text: string) => void;
 }
 
 const TODAY_STR = new Date().toISOString().slice(0, 10);
@@ -25,7 +26,7 @@ function greeting() {
   return 'Buenas noches';
 }
 
-export function Dashboard({ state, setSection, toggleHabit }: Props) {
+export function Dashboard({ state, setSection, toggleHabit, setNote }: Props) {
   const mobile = useIsMobile();
   const [, setTick] = useState(0);
 
@@ -70,6 +71,7 @@ export function Dashboard({ state, setSection, toggleHabit }: Props) {
     done: state.habitCompletions.some(c => c.habitId === h.id && c.date === TODAY_STR),
   }));
 
+  const todayNote = state.notes[TODAY_STR] ?? '';
   const dateStr = new Date().toLocaleDateString('es-MX', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
 
   return (
@@ -144,8 +146,8 @@ export function Dashboard({ state, setSection, toggleHabit }: Props) {
         <CardTitle color={SS.yellow}>Productividad de Hoy</CardTitle>
         <div style={{ display:'grid', gridTemplateColumns: mobile ? '1fr' : '1fr 1fr', gap:16 }}>
           {[
-            { label:'Horas Estudio', current: studyH || 3.5, goal:6, color:SS.yellow, running: !!state.studyTimerStart },
-            { label:'Horas Trabajo',  current: workH  || 5.0, goal:8, color:SS.blue,   running: !!state.workTimerStart },
+            { label:'Horas Estudio', current: studyH, goal:6, color:SS.yellow, running: !!state.studyTimerStart },
+            { label:'Horas Trabajo',  current: workH,  goal:8, color:SS.blue,  running: !!state.workTimerStart },
           ].map((item, i) => (
             <div key={i} style={{ display:'flex', alignItems:'center', gap:14 }}>
               <Donut pct={Math.min((item.current / item.goal) * 100, 100)} color={item.color} size={60} stroke={7}
@@ -161,6 +163,25 @@ export function Dashboard({ state, setSection, toggleHabit }: Props) {
             </div>
           ))}
         </div>
+      </Card>
+
+      {/* Daily notes */}
+      <Card color={SS.pink} style={{ marginTop:12 }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
+          <CardTitle color={SS.pink}>Nota del Día</CardTitle>
+          <span style={{ fontSize:9, color:SS.dimText }}>{todayNote.length > 0 ? `${todayNote.length} chars · guardado` : 'vacía'}</span>
+        </div>
+        <textarea
+          value={todayNote}
+          onChange={e => setNote(TODAY_STR, e.target.value)}
+          placeholder="Escribe algo para recordar hoy... reflexiones, pendientes, ideas..."
+          rows={3}
+          style={{
+            width:'100%', background:SS.card2, border:`1px solid ${SS.pink}25`, borderRadius:10,
+            padding:'10px 12px', color:'rgba(255,255,255,0.8)', fontSize:12, fontFamily:"'DM Sans',sans-serif",
+            outline:'none', resize:'vertical', lineHeight:1.5,
+          }}
+        />
       </Card>
     </div>
   );

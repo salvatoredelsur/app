@@ -29,6 +29,7 @@ export interface AppState {
   studyTimerStart: string | null;
   workTimerStart: string | null;
   pomodoroCount: number;
+  notes: Record<string, string>;
   transactions: Transaction[];
   payments: Payment[];
   goals: Goal[];
@@ -103,6 +104,7 @@ const defaultState: AppState = {
     { date: today(), project: 'App SS', durationMin: 300 },
   ],
   pomodoroCount: 7,
+  notes: {},
   transactions: [
     { id:1, date: today(), amount: 28000, category: 'Salario',      description: 'Salario mensual', type: 'income' },
     { id:2, date: today(), amount: 8500,  category: 'Vivienda',     description: 'Renta',           type: 'expense' },
@@ -257,6 +259,10 @@ export function useStore() {
     });
   }, []);
 
+  const setNote = useCallback((date: string, text: string) => {
+    setState(s => ({ ...s, notes: { ...s.notes, [date]: text } }));
+  }, []);
+
   const addStudySession = useCallback((subject: string, durationMin: number) => {
     setState(s => ({ ...s, studySessions: [...s.studySessions, { date: today(), subject, durationMin }] }));
   }, []);
@@ -267,6 +273,10 @@ export function useStore() {
 
   const incrementPomodoro = useCallback(() => {
     setState(s => ({ ...s, pomodoroCount: s.pomodoroCount + 1 }));
+  }, []);
+
+  const resetPomodoro = useCallback(() => {
+    setState(s => ({ ...s, pomodoroCount: 0 }));
   }, []);
 
   const updateProject = useCallback((id: number, patch: Partial<Omit<Project, 'id'>>) => {
@@ -325,7 +335,8 @@ export function useStore() {
     addTransaction, deleteTransaction,
     addGoalFunds, addGoal, deleteGoal,
     addProject, updateProject, deleteProject,
-    toggleStudyTimer, toggleWorkTimer, addStudySession, addWorkSession, incrementPomodoro,
+    setNote,
+    toggleStudyTimer, toggleWorkTimer, addStudySession, addWorkSession, incrementPomodoro, resetPomodoro,
     updateHealthMetrics,
   };
 }
