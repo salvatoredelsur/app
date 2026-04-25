@@ -23,6 +23,7 @@ interface Props {
 }
 
 const BALANCE_TREND = [38000,39500,40200,38800,41000,42500,41800,43200,44000,43500,44800,45230];
+const TREND_PCT = Math.round(((BALANCE_TREND[BALANCE_TREND.length-1] - BALANCE_TREND[0]) / BALANCE_TREND[0]) * 100);
 
 const CAT_COLORS: Record<string, string> = {
   'Vivienda':      SS.blue,
@@ -62,7 +63,7 @@ export function Finanzas({ state, togglePayment, addTransaction, addGoalFunds, d
   const income  = state.transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
   const expense = state.transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
   const balance = income - expense;
-  const savings = income - expense;
+  const savings = balance;
 
   const gastosCat = (() => {
     const bycat: Record<string, number> = {};
@@ -148,7 +149,7 @@ export function Finanzas({ state, togglePayment, addTransaction, addGoalFunds, d
         <Card color={SS.green}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
             <CardTitle color={SS.green}>Tendencia de Balance</CardTitle>
-            <span style={{ fontSize:11, color:SS.green, fontWeight:700 }}>+19% ↑</span>
+            <span style={{ fontSize:11, color: TREND_PCT >= 0 ? SS.green : SS.red, fontWeight:700 }}>{TREND_PCT >= 0 ? '+' : ''}{TREND_PCT}% {TREND_PCT >= 0 ? '↑' : '↓'}</span>
           </div>
           <Sparkline data={BALANCE_TREND} color={SS.green} width={400} height={60} fluid/>
           <div style={{ display:'flex', justifyContent:'space-between', marginTop:4 }}>

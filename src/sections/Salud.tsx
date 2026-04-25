@@ -53,7 +53,10 @@ export function Salud({ state, toggleFast, addWeight, setFastGoal, updateHealthM
   const startWeight   = weightData.length > 0 ? weightData[0] : 82.0;
   const weightDiff    = +(currentWeight - startWeight).toFixed(1);
   const weightGoal    = 75;
-  const weightPct     = Math.max(0, Math.min(100, Math.round(((startWeight - currentWeight) / (startWeight - weightGoal)) * 100)));
+  const rawWeightPct  = (startWeight - weightGoal) !== 0
+    ? ((startWeight - currentWeight) / (startWeight - weightGoal)) * 100
+    : currentWeight <= weightGoal ? 100 : 0;
+  const weightPct     = Math.max(0, Math.min(100, Math.round(rawWeightPct)));
 
   const fastStreak = (() => {
     let n = 0;
@@ -140,7 +143,7 @@ export function Salud({ state, toggleFast, addWeight, setFastGoal, updateHealthM
 
         <Card color={SS.cyan} style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:10 }}>
           <CardTitle color={SS.cyan}>Meta Corporal</CardTitle>
-          <Donut pct={weightPct || 61} color={SS.green} size={100} stroke={11} label={`${currentWeight}`} sublabel="kg"/>
+          <Donut pct={weightPct} color={SS.green} size={100} stroke={11} label={`${currentWeight}`} sublabel="kg"/>
           <div style={{ textAlign:'center' }}>
             <div style={{ fontSize:11, color:SS.dimText }}>
               Faltan <span style={{ color:SS.green, fontWeight:700 }}>{Math.max(0, +(currentWeight - weightGoal).toFixed(1))} kg</span>

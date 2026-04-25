@@ -27,7 +27,9 @@ export interface AppState {
   studySessions: { date: string; subject: string; durationMin: number }[];
   workSessions: { date: string; project: string; durationMin: number }[];
   studyTimerStart: string | null;
+  studyTimerSubject: string;
   workTimerStart: string | null;
+  workTimerSubject: string;
   pomodoroCount: number;
   notes: Record<string, string>;
   transactions: Transaction[];
@@ -44,7 +46,9 @@ const defaultState: AppState = {
   fastGoalHours: 16,
   healthMetrics: { imc: 23.4, grasa: 18.2, musculo: 42.1 },
   studyTimerStart: null,
+  studyTimerSubject: '',
   workTimerStart: null,
+  workTimerSubject: '',
   weightLog: (() => {
     const arr: WeightEntry[] = [];
     const vals = [82.0,81.8,81.5,81.2,80.9,80.6,80.2,80.1,79.8,79.5,79.2,79.0,78.8,78.7,78.5,78.4,78.5,78.3,78.1,78.5,78.3,78.2,78.0,78.1,78.5,78.3,78.2,78.5,78.4,78.5];
@@ -186,6 +190,18 @@ export function useStore() {
     });
   }, []);
 
+  const markAllHabits = useCallback((date: string) => {
+    setState(s => {
+      const alreadyDoneIds = new Set(s.habitCompletions.filter(c => c.date === date).map(c => c.habitId));
+      const allDone = s.habits.every(h => alreadyDoneIds.has(h.id));
+      if (allDone) {
+        return { ...s, habitCompletions: s.habitCompletions.filter(c => c.date !== date) };
+      }
+      const missing = s.habits.filter(h => !alreadyDoneIds.has(h.id)).map(h => ({ habitId: h.id, date }));
+      return { ...s, habitCompletions: [...s.habitCompletions, ...missing] };
+    });
+  }, []);
+
   const togglePayment = useCallback((id: number) => {
     setState(s => ({
       ...s,
@@ -255,12 +271,13 @@ export function useStore() {
     setState(s => {
       if (s.studyTimerStart) {
         const elapsed = Math.round((Date.now() - new Date(s.studyTimerStart).getTime()) / 60000);
+        const sub = s.studyTimerSubject || subject;
         if (elapsed > 0) {
-          return { ...s, studyTimerStart: null, studySessions: [...s.studySessions, { date: today(), subject, durationMin: elapsed }] };
+          return { ...s, studyTimerStart: null, studyTimerSubject: '', studySessions: [...s.studySessions, { date: today(), subject: sub, durationMin: elapsed }] };
         }
-        return { ...s, studyTimerStart: null };
+        return { ...s, studyTimerStart: null, studyTimerSubject: '' };
       }
-      return { ...s, studyTimerStart: new Date().toISOString() };
+      return { ...s, studyTimerStart: new Date().toISOString(), studyTimerSubject: subject };
     });
   }, []);
 
@@ -268,12 +285,13 @@ export function useStore() {
     setState(s => {
       if (s.workTimerStart) {
         const elapsed = Math.round((Date.now() - new Date(s.workTimerStart).getTime()) / 60000);
+        const proj = s.workTimerSubject || project;
         if (elapsed > 0) {
-          return { ...s, workTimerStart: null, workSessions: [...s.workSessions, { date: today(), project, durationMin: elapsed }] };
+          return { ...s, workTimerStart: null, workTimerSubject: '', workSessions: [...s.workSessions, { date: today(), project: proj, durationMin: elapsed }] };
         }
-        return { ...s, workTimerStart: null };
+        return { ...s, workTimerStart: null, workTimerSubject: '' };
       }
-      return { ...s, workTimerStart: new Date().toISOString() };
+      return { ...s, workTimerStart: new Date().toISOString(), workTimerSubject: project };
     });
   }, []);
 
@@ -364,7 +382,7 @@ export function useStore() {
 
   return {
     state, update,
-    toggleHabit, addHabit, updateHabit, deleteHabit,
+    toggleHabit, markAllHabits, addHabit, updateHabit, deleteHabit,
     togglePayment, addPayment, deletePayment,
     addWeight,
     toggleFast, setFastGoal,

@@ -55,6 +55,8 @@ export function Productividad({ state, addProject, updateProject, deleteProject,
   const [sessionForm, setSessionForm] = useState<{ type:'study'|'work'; subject:string; hours:string; minutes:string }>({ type:'study', subject:'', hours:'', minutes:'' });
   const [studyElapsed, setStudyElapsed] = useState(0);
   const [workElapsed, setWorkElapsed] = useState(0);
+  const [studyInput, setStudyInput] = useState('');
+  const [workInput, setWorkInput] = useState('');
   useEscapeKey(() => { setShowModal(false); setEditingProject(null); setShowSessionModal(false); }, showModal || !!editingProject || showSessionModal);
 
   useEffect(() => {
@@ -164,11 +166,20 @@ export function Productividad({ state, addProject, updateProject, deleteProject,
               <CardTitle color={SS.yellow}>Timer Estudio</CardTitle>
               {state.studyTimerStart && <div style={{ width:7, height:7, borderRadius:'50%', background:SS.green, boxShadow:`0 0 6px ${SS.green}`, animation:'pulse-dot 1.5s ease-in-out infinite', flexShrink:0 }}/>}
             </div>
-            <div style={{ fontSize:20, fontWeight:800, color:'white', fontVariantNumeric:'tabular-nums' }}>
-              {state.studyTimerStart ? fmt(studyElapsed) : '00:00:00'}
-            </div>
+            {state.studyTimerStart ? (
+              <>
+                <div style={{ fontSize:20, fontWeight:800, color:'white', fontVariantNumeric:'tabular-nums' }}>{fmt(studyElapsed)}</div>
+                {state.studyTimerSubject && <div style={{ fontSize:10, color:SS.yellow, marginTop:1 }}>{state.studyTimerSubject}</div>}
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize:20, fontWeight:800, color:'rgba(255,255,255,0.2)', fontVariantNumeric:'tabular-nums' }}>00:00:00</div>
+                <input value={studyInput} onChange={e => setStudyInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && !state.studyTimerStart && toggleStudyTimer(studyInput.trim() || 'General')}
+                  placeholder="Materia / tema…" style={{ marginTop:4, width:'100%', background:'transparent', border:'none', borderBottom:`1px solid ${SS.yellow}40`, color:'rgba(255,255,255,0.6)', fontSize:10, fontFamily:"'DM Sans',sans-serif", outline:'none', padding:'2px 0' }}/>
+              </>
+            )}
           </div>
-          <button onClick={() => toggleStudyTimer('General')} style={timerBtnStyle(state.studyTimerStart, SS.yellow)}>
+          <button onClick={() => { toggleStudyTimer(studyInput.trim() || 'General'); if (!state.studyTimerStart) setStudyInput(''); }} style={timerBtnStyle(state.studyTimerStart, SS.yellow)}>
             {state.studyTimerStart ? '⏹ Stop' : '▶ Start'}
           </button>
         </Card>
@@ -179,11 +190,20 @@ export function Productividad({ state, addProject, updateProject, deleteProject,
               <CardTitle color={SS.blue}>Timer Trabajo</CardTitle>
               {state.workTimerStart && <div style={{ width:7, height:7, borderRadius:'50%', background:SS.green, boxShadow:`0 0 6px ${SS.green}`, animation:'pulse-dot 1.5s ease-in-out infinite', flexShrink:0 }}/>}
             </div>
-            <div style={{ fontSize:20, fontWeight:800, color:'white', fontVariantNumeric:'tabular-nums' }}>
-              {state.workTimerStart ? fmt(workElapsed) : '00:00:00'}
-            </div>
+            {state.workTimerStart ? (
+              <>
+                <div style={{ fontSize:20, fontWeight:800, color:'white', fontVariantNumeric:'tabular-nums' }}>{fmt(workElapsed)}</div>
+                {state.workTimerSubject && <div style={{ fontSize:10, color:SS.blue, marginTop:1 }}>{state.workTimerSubject}</div>}
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize:20, fontWeight:800, color:'rgba(255,255,255,0.2)', fontVariantNumeric:'tabular-nums' }}>00:00:00</div>
+                <input value={workInput} onChange={e => setWorkInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && !state.workTimerStart && toggleWorkTimer(workInput.trim() || 'General')}
+                  placeholder="Proyecto / tarea…" style={{ marginTop:4, width:'100%', background:'transparent', border:'none', borderBottom:`1px solid ${SS.blue}40`, color:'rgba(255,255,255,0.6)', fontSize:10, fontFamily:"'DM Sans',sans-serif", outline:'none', padding:'2px 0' }}/>
+              </>
+            )}
           </div>
-          <button onClick={() => toggleWorkTimer('General')} style={timerBtnStyle(state.workTimerStart, SS.blue)}>
+          <button onClick={() => { toggleWorkTimer(workInput.trim() || 'General'); if (!state.workTimerStart) setWorkInput(''); }} style={timerBtnStyle(state.workTimerStart, SS.blue)}>
             {state.workTimerStart ? '⏹ Stop' : '▶ Start'}
           </button>
         </Card>

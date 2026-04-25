@@ -13,6 +13,7 @@ import { Donut } from '../components/shared/Donut';
 interface Props {
   state: AppState;
   toggleHabit: (id: number, date: string) => void;
+  markAllHabits: (date: string) => void;
   addHabit: (h: Omit<Habit, 'id'>) => void;
   updateHabit: (id: number, patch: Partial<Omit<Habit, 'id'>>) => void;
   deleteHabit: (id: number) => void;
@@ -26,7 +27,7 @@ function getDateStr(daysAgo: number) {
   return d.toISOString().slice(0, 10);
 }
 
-export function Habitos({ state, toggleHabit, addHabit, updateHabit, deleteHabit }: Props) {
+export function Habitos({ state, toggleHabit, markAllHabits, addHabit, updateHabit, deleteHabit }: Props) {
   const mobile = useIsMobile();
   const [showModal, setShowModal] = useState(false);
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
@@ -37,6 +38,9 @@ export function Habitos({ state, toggleHabit, addHabit, updateHabit, deleteHabit
   useEscapeKey(() => { setShowModal(false); setEditingHabit(null); }, showModal || !!editingHabit);
 
   const { habits, habitCompletions } = state;
+  const TODAY_STR = getDateStr(0);
+  const completedToday = habitCompletions.filter(c => c.date === TODAY_STR).length;
+  const allDoneToday = habits.length > 0 && completedToday === habits.length;
 
   const completedTotal = habitCompletions.length;
   const possibleTotal  = habits.length * 25;
@@ -126,7 +130,12 @@ export function Habitos({ state, toggleHabit, addHabit, updateHabit, deleteHabit
     <div style={{ position:'relative' }}>
       <CircuitBg id="hb" opacity={0.05}/>
       <Blob color={SS.purple} top={-40} right={-20}/>
-      <SectionHdr title="Hábitos Diarios" sub={`${new Date().toLocaleDateString('es-MX',{month:'long',year:'numeric'})} · ${avgPct}% completado`} color={SS.purple} action="+ Hábito" onAction={() => setShowModal(true)}/>
+      <SectionHdr title="Hábitos Diarios" sub={`${new Date().toLocaleDateString('es-MX',{month:'long',year:'numeric'})} · Hoy: ${completedToday}/${habits.length}`} color={SS.purple} action="+ Hábito" onAction={() => setShowModal(true)}/>
+      <div style={{ display:'flex', gap:8, marginBottom:16, marginTop:-10 }}>
+        <button onClick={() => markAllHabits(TODAY_STR)} style={{ fontSize:10, color: allDoneToday ? SS.red : SS.purple, background: allDoneToday ? `${SS.red}12` : `${SS.purple}12`, border:`1px solid ${allDoneToday ? SS.red : SS.purple}30`, borderRadius:14, padding:'4px 12px', cursor:'pointer', fontFamily:"'DM Sans',sans-serif", fontWeight:600 }}>
+          {allDoneToday ? '↺ Desmarcar todos' : '✓ Marcar todos hoy'}
+        </button>
+      </div>
 
       <div style={{ display:'grid', gridTemplateColumns: mobile ? '1fr 1fr' : 'repeat(4,1fr)', gap:10, marginBottom:20 }}>
         {[
@@ -184,11 +193,14 @@ export function Habitos({ state, toggleHabit, addHabit, updateHabit, deleteHabit
         <CardTitle color={SS.blue}>Cuadrícula Mensual</CardTitle>
         <div style={{ overflowX:'auto' }}>
           {habits.length === 0 && <div style={{ fontSize:11, color:SS.dimText, padding:'8px 0' }}>No hay hábitos aún. Añade uno con + Hábito.</div>}
-          {habits.map((habit) => (
+          {habits.map((habit, hi) => {
+            const streak = habitStreaks[hi] ?? 0;
+            return (
             <div key={habit.id} style={{ display:'flex', alignItems:'center', gap:4, marginBottom:5 }}>
-              <div style={{ display:'flex', alignItems:'center', gap:5, minWidth:80, flexShrink:0 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:5, minWidth:96, flexShrink:0 }}>
                 <div style={{ width:7, height:7, borderRadius:2, background:habit.color, flexShrink:0 }}/>
-                <span style={{ fontSize:9, color:'rgba(255,255,255,0.55)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', maxWidth:68 }}>{habit.name}</span>
+                <span style={{ fontSize:9, color:'rgba(255,255,255,0.55)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', maxWidth:62 }}>{habit.name}</span>
+                {streak > 0 && <span style={{ fontSize:8, color:habit.color, fontWeight:700, flexShrink:0 }}>🔥{streak}</span>}
               </div>
               <div style={{ display:'flex', gap:2 }}>
                 {Array.from({ length: 25 }, (_, di) => {
@@ -201,7 +213,8 @@ export function Habitos({ state, toggleHabit, addHabit, updateHabit, deleteHabit
                 })}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       </Card>
 
