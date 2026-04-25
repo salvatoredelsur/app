@@ -1,0 +1,202 @@
+import { useState } from 'react';
+import type { AppState } from '../store/useStore';
+import { SS } from '../tokens';
+import { CircuitBg } from '../components/shared/CircuitBg';
+import { Blob } from '../components/shared/Blob';
+import { SectionHdr } from '../components/shared/SectionHdr';
+import { Card, CardTitle } from '../components/shared/Card';
+import { Bar } from '../components/shared/Bar';
+import { Donut } from '../components/shared/Donut';
+
+interface Props {
+  state: AppState;
+  toggleHabit: (id: number, date: string) => void;
+}
+
+const WEEK_DAYS = ['L','M','X','J','V','S','D'];
+
+function getDateStr(daysAgo: number) {
+  const d = new Date(); d.setDate(d.getDate() - daysAgo);
+  return d.toISOString().slice(0, 10);
+}
+
+export function Habitos({ state, toggleHabit }: Props) {
+  const [showModal, setShowModal] = useState(false);
+  const [newHabitName, setNewHabitName] = useState('');
+
+  const { habits, habitCompletions } = state;
+
+  const completedTotal = habitCompletions.length;
+  const possibleTotal  = habits.length * 25;
+  const remainingEst   = Math.max(0, possibleTotal - completedTotal);
+
+  const streaks = habits.map(h => {
+    let streak = 0;
+    for (let i = 0; i < 60; i++) {
+      const date = getDateStr(i);
+      if (habitCompletions.some(c => c.habitId === h.id && c.date === date)) streak++;
+      else break;
+    }
+    return streak;
+  });
+  const maxStreak = Math.max(...streaks, 0);
+  const curStreak = streaks.length > 0 ? Math.max(...streaks) : 0;
+
+  const totalPossible = habits.length * 30;
+  const avgPct = totalPossible > 0 ? Math.round((completedTotal / totalPossible) * 100) : 0;
+
+  const daily = Array.from({ length: 30 }, (_, i) => {
+    const date = getDateStr(29 - i);
+    const done = habitCompletions.filter(c => c.date === date).length;
+    return habits.length > 0 ? Math.round((done / habits.length) * 100) : 0;
+  });
+
+  const W = 500, H = 70;
+  const pts = daily.map((v, i): [number, number] => [
+    (i / (daily.length - 1)) * (W - 24) + 12,
+    H - ((v / 100) * (H - 8)) + 4,
+  ]);
+  const linePath = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
+  const fillPath = linePath + ` L${pts[pts.length-1][0]},${H+4} L${pts[0][0]},${H+4} Z`;
+
+  const weekVals = Array.from({ length: 7 }, (_, i) => {
+    const date = getDateStr(6 - i);
+    const done = habitCompletions.filter(c => c.date === date).length;
+    return habits.length > 0 ? Math.round((done / habits.length) * 100) : 0;
+  });
+
+  const topHabits = habits.map((h, i) => {
+    const done = habitCompletions.filter(c => c.habitId === h.id).length;
+    return { ...h, pct: Math.round((done / 25) * 100), streak: streaks[i] ?? 0 };
+  }).sort((a, b) => b.pct - a.pct);
+
+  const RANK_COLORS = [SS.yellow, 'rgba(200,210,230,0.8)', '#cd7f32'];
+
+  return (
+    <div style={{ position:'relative' }}>
+      <CircuitBg id="hb" opacity={0.05}/>
+      <Blob color={SS.purple} top={-40} right={-20}/>
+      <SectionHdr title="Hábitos Diarios" sub={`Abril 2026 · ${avgPct}% completado`} color={SS.purple} action="+ Hábito" onAction={() => setShowModal(true)}/>
+
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10, marginBottom:20 }}>
+        {[
+          { lb:'Completados', val: String(completedTotal), c:SS.green  },
+          { lb:'Restantes',   val: String(remainingEst),   c:SS.pink   },
+          { lb:'Días racha',  val: String(curStreak),      c:SS.yellow },
+          { lb:'Mejor racha', val: String(maxStreak),      c:SS.cyan   },
+        ].map((s, i) => (
+          <Card key={i} color={s.c} style={{ textAlign:'center', padding:'12px 8px' }}>
+            <div style={{ fontSize:28, fontWeight:900, color:s.c, textShadow:`0 0 18px ${s.c}99`, lineHeight:1 }}>{s.val}</div>
+            <div style={{ fontSize:9, color:SS.dimText, marginTop:3 }}>{s.lb}</div>
+          </Card>
+        ))}
+      </div>
+
+      <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr', gap:14, marginBottom:20 }}>
+        <Card color={SS.green}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
+            <CardTitle color={SS.green}>Progreso Diario — Abril</CardTitle>
+            <span style={{ fontSize:11, color:SS.green, fontWeight:700 }}>{avgPct}% avg</span>
+          </div>
+          <svg width="100%" viewBox={`0 0 ${W} ${H+8}`} style={{ display:'block' }}>
+            <defs>
+              <linearGradient id="hlg" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={SS.green} stopOpacity=".25"/>
+                <stop offset="100%" stopColor={SS.green} stopOpacity=".01"/>
+              </linearGradient>
+            </defs>
+            {[25,50,75].map(v => <line key={v} x1="0" y1={H-((v/100)*(H-8))+4} x2={W} y2={H-((v/100)*(H-8))+4} stroke="rgba(255,255,255,0.04)" strokeWidth="1"/>)}
+            <path d={fillPath} fill="url(#hlg)"/>
+            <path d={linePath} fill="none" stroke={SS.green} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ filter:`drop-shadow(0 0 4px ${SS.green})` }}/>
+            <circle cx={pts[pts.length-1][0]} cy={pts[pts.length-1][1]} r={4} fill="#060c18" stroke={SS.green} strokeWidth="2"/>
+          </svg>
+        </Card>
+
+        <Card color={SS.purple} style={{ display:'flex', flexDirection:'column', gap:12 }}>
+          <div>
+            <CardTitle color={SS.purple}>Esta Semana</CardTitle>
+            <div style={{ display:'flex', alignItems:'flex-end', gap:4, height:50 }}>
+              {weekVals.map((v, i) => (
+                <div key={i} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:3 }}>
+                  <div style={{ width:'100%', height:`${(v/100)*46}px`, background: habits[i % habits.length]?.color || SS.purple, borderRadius:3, boxShadow:`0 0 5px ${habits[i % habits.length]?.color || SS.purple}60` }}/>
+                  <span style={{ fontSize:7.5, color:SS.mutedText }}>{WEEK_DAYS[i]}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{ display:'flex', justifyContent:'center' }}>
+            <Donut pct={avgPct} color={SS.purple} size={72} stroke={8} label={`${avgPct}%`}/>
+          </div>
+        </Card>
+      </div>
+
+      <Card color={SS.blue} style={{ marginBottom:14 }}>
+        <CardTitle color={SS.blue}>Cuadrícula Mensual</CardTitle>
+        <div style={{ overflowX:'auto' }}>
+          {habits.map((habit) => (
+            <div key={habit.id} style={{ display:'flex', alignItems:'center', gap:4, marginBottom:5 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:5, minWidth:80 }}>
+                <div style={{ width:7, height:7, borderRadius:2, background:habit.color, flexShrink:0 }}/>
+                <span style={{ fontSize:9, color:'rgba(255,255,255,0.55)', whiteSpace:'nowrap' }}>{habit.name}</span>
+              </div>
+              <div style={{ display:'flex', gap:2 }}>
+                {Array.from({ length: 25 }, (_, di) => {
+                  const date = getDateStr(24 - di);
+                  const done = habitCompletions.some(c => c.habitId === habit.id && c.date === date);
+                  return (
+                    <div
+                      key={di}
+                      onClick={() => toggleHabit(habit.id, date)}
+                      title={date}
+                      style={{
+                        width:14, height:14, borderRadius:3, cursor:'pointer',
+                        background: done ? habit.color : 'rgba(255,255,255,0.04)',
+                        border:`1px solid ${done ? habit.color + '50' : 'rgba(255,255,255,0.06)'}`,
+                        boxShadow: done ? `0 0 4px ${habit.color}80` : 'none',
+                        transition:'background .1s',
+                      }}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <Card color={SS.cyan}>
+        <CardTitle color={SS.cyan}>Ranking del Mes</CardTitle>
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'6px 20px' }}>
+          {topHabits.map((h, i) => (
+            <div key={h.id} style={{ display:'flex', alignItems:'center', gap:8 }}>
+              <span style={{ fontSize:10, fontWeight:800, color: i < 3 ? RANK_COLORS[i] : 'rgba(255,255,255,0.25)', width:16 }}>{i+1}</span>
+              <div style={{ flex:1 }}>
+                <div style={{ display:'flex', justifyContent:'space-between', marginBottom:2 }}>
+                  <span style={{ fontSize:10, color:'rgba(255,255,255,0.8)', fontWeight:500 }}>{h.name}</span>
+                  <span style={{ fontSize:10, color:h.color, fontWeight:700 }}>{h.pct}%</span>
+                </div>
+                <Bar pct={h.pct} color={h.color} height={3}/>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {showModal && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.7)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 }} onClick={() => setShowModal(false)}>
+          <div style={{ background:'#0c1828', borderRadius:16, padding:24, minWidth:280, border:`1px solid ${SS.purple}30` }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize:14, fontWeight:700, color:'white', marginBottom:16 }}>Nuevo Hábito</div>
+            <label style={{ fontSize:11, color:SS.dimText, display:'block', marginBottom:4 }}>Nombre</label>
+            <input
+              value={newHabitName} onChange={e => setNewHabitName(e.target.value)}
+              placeholder="Meditación..."
+              style={{ width:'100%', background:SS.card2, border:`1px solid ${SS.purple}40`, borderRadius:8, padding:'8px 12px', color:'white', fontSize:13, fontFamily:"'DM Sans',sans-serif", outline:'none', marginBottom:10 }}
+              autoFocus
+            />
+            <button onClick={() => { if(newHabitName.trim()) { setShowModal(false); setNewHabitName(''); } }} style={{ width:'100%', padding:'10px', background:SS.purple, color:'white', border:'none', borderRadius:10, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>Crear Hábito</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
