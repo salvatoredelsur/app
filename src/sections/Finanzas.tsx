@@ -283,8 +283,13 @@ export function Finanzas({ state, togglePayment, addTransaction, addGoalFunds, d
                 </div>
                 <Bar pct={(o.current/o.target)*100} color={o.color}/>
                 <div style={{ display:'flex', justifyContent:'space-between', marginTop:4 }}>
-                  <span style={{ fontSize:9, color:SS.dimText }}>Toca para añadir fondos</span>
-                  <span style={{ fontSize:9, fontWeight:700, color:o.color }}>{Math.round((o.current/o.target)*100)}%</span>
+                  <span style={{ fontSize:9, color:SS.dimText }}>
+                    {savings > 0 && o.current < o.target
+                      ? `~${Math.ceil((o.target - o.current) / savings)} mes${Math.ceil((o.target - o.current) / savings) !== 1 ? 'es' : ''}`
+                      : 'Toca para añadir fondos'
+                    }
+                  </span>
+                  <span style={{ fontSize:9, fontWeight:700, color:o.color }}>{Math.min(100, Math.round((o.current/o.target)*100))}%</span>
                 </div>
               </div>
             </div>
@@ -304,18 +309,30 @@ export function Finanzas({ state, togglePayment, addTransaction, addGoalFunds, d
               </button>
             ))}
           </div>
-          {([
-            { label:'Monto ($)',    key:'amount'      as const, placeholder:'1500',          type:'number' },
-            { label:'Categoría',   key:'category'    as const, placeholder:'Alimentación',  type:'text'   },
-            { label:'Descripción', key:'description' as const, placeholder:'Supermercado…', type:'text'   },
-          ]).map(f => (
-            <div key={f.key} style={{ marginBottom:8 }}>
-              <label style={{ fontSize:11, color:SS.dimText, display:'block', marginBottom:4 }}>{f.label}</label>
-              <input type={f.type} value={txForm[f.key]} onChange={e => setTxForm(prev => ({ ...prev, [f.key]: e.target.value }))}
-                placeholder={f.placeholder} onKeyDown={e => e.key === 'Enter' && handleAddTx()}
-                style={inputStyle(SS.green)}/>
+          <div style={{ marginBottom:8 }}>
+            <label style={{ fontSize:11, color:SS.dimText, display:'block', marginBottom:4 }}>Monto ($)</label>
+            <input type="number" value={txForm.amount} onChange={e => setTxForm(prev => ({ ...prev, amount: e.target.value }))}
+              placeholder="1500" autoFocus style={inputStyle(SS.green)}/>
+          </div>
+          <div style={{ marginBottom:8 }}>
+            <label style={{ fontSize:11, color:SS.dimText, display:'block', marginBottom:4 }}>Categoría</label>
+            <input type="text" value={txForm.category} onChange={e => setTxForm(prev => ({ ...prev, category: e.target.value }))}
+              placeholder="Alimentación" style={inputStyle(SS.green)}/>
+            <div style={{ display:'flex', gap:5, flexWrap:'wrap', marginTop:4 }}>
+              {(txForm.type === 'income'
+                ? ['Salario','Freelance','Inversiones','Bono']
+                : ['Vivienda','Alimentación','Transporte','Salud','Suscripciones','Crédito','Tech','Otros']
+              ).map(cat => (
+                <button key={cat} onClick={() => setTxForm(prev => ({ ...prev, category: cat }))}
+                  style={{ fontSize:9, padding:'3px 8px', borderRadius:10, border:`1px solid ${txForm.category===cat ? SS.green : 'rgba(255,255,255,0.1)'}`, background: txForm.category===cat ? `${SS.green}20` : 'transparent', color: txForm.category===cat ? SS.green : SS.dimText, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>{cat}</button>
+              ))}
             </div>
-          ))}
+          </div>
+          <div style={{ marginBottom:8 }}>
+            <label style={{ fontSize:11, color:SS.dimText, display:'block', marginBottom:4 }}>Descripción</label>
+            <input type="text" value={txForm.description} onChange={e => setTxForm(prev => ({ ...prev, description: e.target.value }))}
+              placeholder="Supermercado…" onKeyDown={e => e.key === 'Enter' && handleAddTx()} style={inputStyle(SS.green)}/>
+          </div>
           <button onClick={handleAddTx} style={{ marginTop:4, width:'100%', padding:'10px', background:SS.green, color:SS.bg, border:'none', borderRadius:10, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>Registrar</button>
         </Modal>
       )}
