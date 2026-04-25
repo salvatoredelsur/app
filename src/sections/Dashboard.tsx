@@ -31,10 +31,10 @@ export function Dashboard({ state, setSection, toggleHabit, setNote }: Props) {
   const [, setTick] = useState(0);
 
   useEffect(() => {
-    if (!state.fastStartTime) return;
+    if (!state.fastStartTime && !state.studyTimerStart && !state.workTimerStart) return;
     const id = setInterval(() => setTick(t => t + 1), 10000);
     return () => clearInterval(id);
-  }, [state.fastStartTime]);
+  }, [state.fastStartTime, state.studyTimerStart, state.workTimerStart]);
 
   const weightTrend   = state.weightLog.slice(-14).map(e => e.kg);
   const balanceTrend  = [38000,39500,40200,38800,41000,42500,41800,43200,44000,43500,44800,45230];
@@ -152,8 +152,8 @@ export function Dashboard({ state, setSection, toggleHabit, setNote }: Props) {
         <CardTitle color={SS.yellow}>Productividad de Hoy</CardTitle>
         <div style={{ display:'grid', gridTemplateColumns: mobile ? '1fr' : '1fr 1fr', gap:16 }}>
           {[
-            { label:'Horas Estudio', current: studyH, goal:6, color:SS.yellow, running: !!state.studyTimerStart },
-            { label:'Horas Trabajo',  current: workH,  goal:8, color:SS.blue,  running: !!state.workTimerStart },
+            { label:'Horas Estudio', current: studyH, goal:6, color:SS.yellow, running: !!state.studyTimerStart, subject: state.studyTimerSubject },
+            { label:'Horas Trabajo',  current: workH,  goal:8, color:SS.blue,  running: !!state.workTimerStart,  subject: state.workTimerSubject  },
           ].map((item, i) => (
             <div key={i} style={{ display:'flex', alignItems:'center', gap:14 }}>
               <Donut pct={Math.min((item.current / item.goal) * 100, 100)} color={item.color} size={60} stroke={7}
@@ -163,6 +163,7 @@ export function Dashboard({ state, setSection, toggleHabit, setNote }: Props) {
                   <div style={{ fontSize:13, fontWeight:700, color:'rgba(255,255,255,0.85)' }}>{item.label}</div>
                   {item.running && <div style={{ width:7, height:7, borderRadius:'50%', background:SS.green, boxShadow:`0 0 6px ${SS.green}`, animation:'pulse-dot 1.5s ease-in-out infinite' }}/>}
                 </div>
+                {item.running && item.subject && <div style={{ fontSize:9, color:item.color, marginBottom:1 }}>{item.subject}</div>}
                 <div style={{ fontSize:10, color:SS.dimText }}>{item.current}/{item.goal}h · {Math.min(Math.round((item.current/item.goal)*100), 100)}%</div>
                 <button onClick={() => setSection('productividad')} style={{ marginTop:4, fontSize:9, color:item.color, background:'transparent', border:'none', cursor:'pointer', padding:0, fontFamily:"'DM Sans',sans-serif", opacity:.7 }}>Ver detalles →</button>
               </div>
