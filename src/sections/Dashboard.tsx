@@ -155,7 +155,7 @@ export function Dashboard({ state, setSection, toggleHabit, setNote }: Props) {
               <div>
                 <div style={{ display:'flex', alignItems:'center', gap:6 }}>
                   <div style={{ fontSize:13, fontWeight:700, color:'rgba(255,255,255,0.85)' }}>{item.label}</div>
-                  {item.running && <div style={{ width:7, height:7, borderRadius:'50%', background:SS.green, boxShadow:`0 0 6px ${SS.green}`, animation:'none' }}/>}
+                  {item.running && <div style={{ width:7, height:7, borderRadius:'50%', background:SS.green, boxShadow:`0 0 6px ${SS.green}`, animation:'pulse-dot 1.5s ease-in-out infinite' }}/>}
                 </div>
                 <div style={{ fontSize:10, color:SS.dimText }}>{item.current}/{item.goal}h · {Math.min(Math.round((item.current/item.goal)*100), 100)}%</div>
                 <button onClick={() => setSection('productividad')} style={{ marginTop:4, fontSize:9, color:item.color, background:'transparent', border:'none', cursor:'pointer', padding:0, fontFamily:"'DM Sans',sans-serif", opacity:.7 }}>Ver detalles →</button>

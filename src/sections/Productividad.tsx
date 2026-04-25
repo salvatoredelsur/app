@@ -160,7 +160,10 @@ export function Productividad({ state, addProject, updateProject, deleteProject,
       <div style={{ display:'grid', gridTemplateColumns: mobile ? '1fr' : '1fr 1fr 1fr', gap:12, marginBottom:20 }}>
         <Card color={SS.yellow} style={{ display:'flex', alignItems:'center', gap:14 }}>
           <div style={{ flex:1 }}>
-            <CardTitle color={SS.yellow}>Timer Estudio</CardTitle>
+            <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+              <CardTitle color={SS.yellow}>Timer Estudio</CardTitle>
+              {state.studyTimerStart && <div style={{ width:7, height:7, borderRadius:'50%', background:SS.green, boxShadow:`0 0 6px ${SS.green}`, animation:'pulse-dot 1.5s ease-in-out infinite', flexShrink:0 }}/>}
+            </div>
             <div style={{ fontSize:20, fontWeight:800, color:'white', fontVariantNumeric:'tabular-nums' }}>
               {state.studyTimerStart ? fmt(studyElapsed) : '00:00:00'}
             </div>
@@ -172,7 +175,10 @@ export function Productividad({ state, addProject, updateProject, deleteProject,
 
         <Card color={SS.blue} style={{ display:'flex', alignItems:'center', gap:14 }}>
           <div style={{ flex:1 }}>
-            <CardTitle color={SS.blue}>Timer Trabajo</CardTitle>
+            <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+              <CardTitle color={SS.blue}>Timer Trabajo</CardTitle>
+              {state.workTimerStart && <div style={{ width:7, height:7, borderRadius:'50%', background:SS.green, boxShadow:`0 0 6px ${SS.green}`, animation:'pulse-dot 1.5s ease-in-out infinite', flexShrink:0 }}/>}
+            </div>
             <div style={{ fontSize:20, fontWeight:800, color:'white', fontVariantNumeric:'tabular-nums' }}>
               {state.workTimerStart ? fmt(workElapsed) : '00:00:00'}
             </div>

@@ -49,7 +49,7 @@ export function TopBar({ section, mobile, onToggleCollapse }: Props) {
             {new Date().toLocaleDateString('es-MX', { weekday:'short', day:'numeric', month:'long', year:'numeric' }).replace(/^\w/, c => c.toUpperCase())}
           </div>
         )}
-        <div style={{ width:8, height:8, borderRadius:4, background:'#00e896', boxShadow:'0 0 8px #00e89699' }}/>
+        <div style={{ width:8, height:8, borderRadius:4, background:'#00e896', boxShadow:'0 0 8px #00e89699', animation:'pulse-dot 2s ease-in-out infinite' }}/>
         <div style={{ width:30, height:30, borderRadius:15, background:'linear-gradient(135deg,#00aaff,#0040a0)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:900, color:'white', border:'1.5px solid rgba(0,170,255,0.3)', boxShadow:'0 0 10px rgba(0,170,255,0.2)', cursor:'pointer' }}>SS</div>
       </div>
     </div>

@@ -89,9 +89,10 @@ export function Habitos({ state, toggleHabit, addHabit, updateHabit, deleteHabit
     return habits.length > 0 ? Math.round((done / habits.length) * 100) : 0;
   });
 
+  const TRACKING_DAYS = 25;
   const topHabits = habits.map((h, i) => {
     const done = habitCompletions.filter(c => c.habitId === h.id).length;
-    return { ...h, pct: Math.round((done / 25) * 100), streak: habitStreaks[i] ?? 0 };
+    return { ...h, pct: Math.round((done / TRACKING_DAYS) * 100), streak: habitStreaks[i] ?? 0 };
   }).sort((a, b) => b.pct - a.pct);
 
   const RANK_COLORS = [SS.yellow, 'rgba(200,210,230,0.8)', '#cd7f32'];
