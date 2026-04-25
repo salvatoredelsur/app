@@ -23,7 +23,6 @@ interface Props {
   resetPomodoro: () => void;
 }
 
-const WEEK_LABELS = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
 
 const SUBJECT_COLORS = [SS.cyan, SS.blue, SS.yellow, SS.green, SS.orange, SS.pink, SS.purple];
 const DEFAULT_SUBJECTS = [
@@ -229,17 +228,27 @@ export function Productividad({ state, addProject, updateProject, deleteProject,
       <div style={{ display:'grid', gridTemplateColumns: mobile ? '1fr' : '1fr 1fr', gap:14, marginBottom:20 }}>
         {/* Weekly chart from real data */}
         <Card color={SS.yellow}>
-          <CardTitle color={SS.yellow}>Horas Semanales</CardTitle>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
+            <CardTitle color={SS.yellow}>Horas Semanales</CardTitle>
+            <div style={{ display:'flex', gap:12 }}>
+              <span style={{ fontSize:10, color:SS.yellow, fontWeight:700 }}>{weekStudy.reduce((a,b)=>a+b,0).toFixed(1)}h est.</span>
+              <span style={{ fontSize:10, color:SS.blue,   fontWeight:700 }}>{weekWork.reduce((a,b)=>a+b,0).toFixed(1)}h trab.</span>
+            </div>
+          </div>
           <div style={{ display:'flex', alignItems:'flex-end', gap:6, height:80, marginBottom:4 }}>
-            {WEEK_LABELS.map((d, i) => (
-              <div key={d} style={{ flex:1, display:'flex', flexDirection:'column', gap:1, alignItems:'stretch' }}>
+            {Array.from({ length: 7 }, (_, i) => (
+              <div key={i} style={{ flex:1, display:'flex', flexDirection:'column', gap:1, alignItems:'stretch', opacity: i === 6 ? 1 : 0.8 }}>
                 <div style={{ background:SS.blue, borderRadius:'3px 3px 0 0', height:`${(weekWork[i]/maxHrs)*64}px`, boxShadow:`0 0 5px ${SS.blue}55`, minHeight:2 }}/>
                 <div style={{ background:SS.yellow, borderRadius:'0 0 3px 3px', height:`${(weekStudy[i]/maxHrs)*64}px`, boxShadow:`0 0 5px ${SS.yellow}55`, minHeight:2 }}/>
               </div>
             ))}
           </div>
           <div style={{ display:'flex', gap:4 }}>
-            {WEEK_LABELS.map(d => <span key={d} style={{ flex:1, textAlign:'center', fontSize:8, color:SS.mutedText }}>{d}</span>)}
+            {Array.from({ length: 7 }, (_, i) => {
+              const d = new Date(); d.setDate(d.getDate() - (6 - i));
+              const label = d.toLocaleDateString('es-MX', { weekday: 'short' }).replace('.','').slice(0,3);
+              return <span key={i} style={{ flex:1, textAlign:'center', fontSize:8, color: i === 6 ? SS.yellow : SS.mutedText, fontWeight: i === 6 ? 700 : 400 }}>{label}</span>;
+            })}
           </div>
           <div style={{ display:'flex', gap:16, marginTop:8 }}>
             {[{c:SS.yellow,l:'Estudio'},{c:SS.blue,l:'Trabajo'}].map((x, i) => (

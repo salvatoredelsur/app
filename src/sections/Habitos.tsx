@@ -137,12 +137,49 @@ export function Habitos({ state, toggleHabit, markAllHabits, addHabit, updateHab
         </button>
       </div>
 
+      {/* Today's quick-check grid */}
+      <Card color={SS.purple} style={{ marginBottom:20 }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
+          <CardTitle color={SS.purple}>Hoy — Check-in Rápido</CardTitle>
+          <span style={{ fontSize:11, color: allDoneToday ? SS.green : SS.dimText, fontWeight: allDoneToday ? 700 : 400 }}>
+            {allDoneToday ? '¡Todo completado! 🔥' : `${completedToday} / ${habits.length}`}
+          </span>
+        </div>
+        {habits.length === 0 ? (
+          <div style={{ fontSize:11, color:SS.dimText }}>Sin hábitos. Añade uno con + Hábito.</div>
+        ) : (
+          <div style={{ display:'grid', gridTemplateColumns:`repeat(auto-fill, minmax(${mobile ? 100 : 120}px, 1fr))`, gap:8 }}>
+            {habits.map(h => {
+              const done = habitCompletions.some(c => c.habitId === h.id && c.date === TODAY_STR);
+              return (
+                <div key={h.id} onClick={() => toggleHabit(h.id, TODAY_STR)} style={{
+                  display:'flex', alignItems:'center', gap:8, padding:'8px 10px', borderRadius:10, cursor:'pointer',
+                  background: done ? `${h.color}18` : 'rgba(255,255,255,0.03)',
+                  border:`1px solid ${done ? h.color + '40' : 'rgba(255,255,255,0.07)'}`,
+                  boxShadow: done ? `0 0 10px ${h.color}20` : 'none',
+                  transition:'all .15s',
+                }}>
+                  <div style={{
+                    width:16, height:16, borderRadius:4, flexShrink:0,
+                    background: done ? h.color : 'transparent',
+                    border:`1.5px solid ${done ? h.color : 'rgba(255,255,255,0.2)'}`,
+                    display:'flex', alignItems:'center', justifyContent:'center',
+                    fontSize:9, color:SS.bg, fontWeight:800, boxShadow: done ? `0 0 6px ${h.color}80` : 'none',
+                  }}>{done && '✓'}</div>
+                  <span style={{ fontSize:11, color: done ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.4)', fontWeight: done ? 600 : 400, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{h.name}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Card>
+
       <div style={{ display:'grid', gridTemplateColumns: mobile ? '1fr 1fr' : 'repeat(4,1fr)', gap:10, marginBottom:20 }}>
         {[
-          { lb:'Completados', val: String(completedTotal), c:SS.green  },
-          { lb:'Restantes',   val: String(remainingEst),   c:SS.pink   },
-          { lb:'Días racha',  val: String(overallStreak),  c:SS.yellow },
-          { lb:'Mejor racha', val: String(maxStreak),      c:SS.cyan   },
+          { lb:'Este mes',    val: String(completedTotal), c:SS.green  },
+          { lb:'Restantes',  val: String(remainingEst),   c:SS.pink   },
+          { lb:'Días racha', val: String(overallStreak),  c:SS.yellow },
+          { lb:'Mejor racha',val: String(maxStreak),      c:SS.cyan   },
         ].map((s, i) => (
           <Card key={i} color={s.c} style={{ textAlign:'center', padding:'12px 8px' }}>
             <div style={{ fontSize:28, fontWeight:900, color:s.c, textShadow:`0 0 18px ${s.c}99`, lineHeight:1 }}>{s.val}</div>
@@ -205,10 +242,11 @@ export function Habitos({ state, toggleHabit, markAllHabits, addHabit, updateHab
               <div style={{ display:'flex', gap:2 }}>
                 {Array.from({ length: 25 }, (_, di) => {
                   const date = getDateStr(24 - di);
+                  const isToday = di === 24;
                   const done = habitCompletions.some(c => c.habitId === habit.id && c.date === date);
                   return (
-                    <div key={di} onClick={() => toggleHabit(habit.id, date)} title={date}
-                      style={{ width:14, height:14, borderRadius:3, cursor:'pointer', background: done ? habit.color : 'rgba(255,255,255,0.04)', border:`1px solid ${done ? habit.color + '50' : 'rgba(255,255,255,0.06)'}`, boxShadow: done ? `0 0 4px ${habit.color}80` : 'none', transition:'background .1s' }}/>
+                    <div key={di} onClick={() => toggleHabit(habit.id, date)} title={`${date}${isToday ? ' · HOY' : ''}`}
+                      style={{ width:14, height:14, borderRadius:3, cursor:'pointer', background: done ? habit.color : 'rgba(255,255,255,0.04)', border:`1px solid ${isToday ? 'rgba(255,255,255,0.3)' : done ? habit.color + '50' : 'rgba(255,255,255,0.06)'}`, boxShadow: done ? `0 0 4px ${habit.color}80` : 'none', outline: isToday && !done ? '1px solid rgba(255,255,255,0.15)' : 'none', outlineOffset:1, transition:'background .1s' }}/>
                   );
                 })}
               </div>
