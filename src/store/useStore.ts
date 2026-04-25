@@ -97,12 +97,30 @@ const defaultState: AppState = {
     { id:4, name:'Certificación AWS', cat:'📚 Estudio',    pct:30, color:'#00aaff', deadline:'1 Sep 2026',  tasks:15, done:4 },
     { id:5, name:'Fondo Emergencia',  cat:'💰 Finanzas',   pct:72, color:'#00e896', deadline:'31 Dic 2026', tasks:3,  done:2 },
   ],
-  studySessions: [
-    { date: today(), subject: 'IA', durationMin: 210 },
-  ],
-  workSessions: [
-    { date: today(), project: 'App SS', durationMin: 300 },
-  ],
+  studySessions: (() => {
+    const d = (ago: number) => { const dt = new Date(); dt.setDate(dt.getDate() - ago); return dt.toISOString().slice(0,10); };
+    return [
+      { date: d(6), subject: 'Programación Web', durationMin: 240 },
+      { date: d(5), subject: 'IA',                durationMin: 300 },
+      { date: d(4), subject: 'Inglés',             durationMin: 120 },
+      { date: d(3), subject: 'IA',                durationMin: 330 },
+      { date: d(2), subject: 'Finanzas',           durationMin: 90  },
+      { date: d(1), subject: 'Programación Web',  durationMin: 150 },
+      { date: d(0), subject: 'IA',                durationMin: 210 },
+    ];
+  })(),
+  workSessions: (() => {
+    const d = (ago: number) => { const dt = new Date(); dt.setDate(dt.getDate() - ago); return dt.toISOString().slice(0,10); };
+    return [
+      { date: d(6), project: 'Curso IA',   durationMin: 420 },
+      { date: d(5), project: 'App SS',     durationMin: 480 },
+      { date: d(4), project: 'Podcast',    durationMin: 360 },
+      { date: d(3), project: 'App SS',     durationMin: 480 },
+      { date: d(2), project: 'AWS Cert',   durationMin: 300 },
+      { date: d(1), project: 'App SS',     durationMin: 390 },
+      { date: d(0), project: 'App SS',     durationMin: 300 },
+    ];
+  })(),
   pomodoroCount: 7,
   notes: {},
   transactions: [

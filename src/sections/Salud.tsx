@@ -200,16 +200,19 @@ export function Salud({ state, toggleFast, addWeight, setFastGoal, updateHealthM
         <div style={{ marginTop:16 }}>
           <CardTitle>Historial de Ayunos — Este mes</CardTitle>
           <div style={{ display:'flex', gap:4, flexWrap:'wrap' }}>
-            {state.fastLog.slice(-28).map((d, i) => (
-              <div key={i} title={`Día ${i+1}: ${d.pct}%`} style={{
-                width:26, height:26, borderRadius:6,
-                background: d.completed ? SS.orange : d.pct > 0 ? `${SS.orange}44` : 'rgba(255,255,255,0.04)',
-                border:`1px solid ${d.completed ? SS.orange + '60' : 'rgba(255,255,255,0.07)'}`,
-                display:'flex', alignItems:'center', justifyContent:'center',
-                fontSize:8, color: d.completed ? SS.bg : 'rgba(255,255,255,0.2)', fontWeight:700,
-                boxShadow: d.completed ? `0 0 6px ${SS.orange}60` : 'none',
-              }}>{i+1}</div>
-            ))}
+            {state.fastLog.slice(-28).map((d, i) => {
+              const dayNum = new Date(d.date).getDate();
+              return (
+                <div key={i} title={`${d.date}: ${d.pct}% · ${d.completed ? 'Completado' : 'Parcial'}`} style={{
+                  width:26, height:26, borderRadius:6,
+                  background: d.completed ? SS.orange : d.pct > 0 ? `${SS.orange}44` : 'rgba(255,255,255,0.04)',
+                  border:`1px solid ${d.completed ? SS.orange + '60' : 'rgba(255,255,255,0.07)'}`,
+                  display:'flex', alignItems:'center', justifyContent:'center',
+                  fontSize:8, color: d.completed ? SS.bg : 'rgba(255,255,255,0.2)', fontWeight:700,
+                  boxShadow: d.completed ? `0 0 6px ${SS.orange}60` : 'none',
+                }}>{dayNum}</div>
+              );
+            })}
           </div>
         </div>
       </Card>
