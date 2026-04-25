@@ -125,7 +125,7 @@ export function Habitos({ state, toggleHabit, addHabit, updateHabit, deleteHabit
     <div style={{ position:'relative' }}>
       <CircuitBg id="hb" opacity={0.05}/>
       <Blob color={SS.purple} top={-40} right={-20}/>
-      <SectionHdr title="Hábitos Diarios" sub={`Abril 2026 · ${avgPct}% completado`} color={SS.purple} action="+ Hábito" onAction={() => setShowModal(true)}/>
+      <SectionHdr title="Hábitos Diarios" sub={`${new Date().toLocaleDateString('es-MX',{month:'long',year:'numeric'})} · ${avgPct}% completado`} color={SS.purple} action="+ Hábito" onAction={() => setShowModal(true)}/>
 
       <div style={{ display:'grid', gridTemplateColumns: mobile ? '1fr 1fr' : 'repeat(4,1fr)', gap:10, marginBottom:20 }}>
         {[
@@ -144,7 +144,7 @@ export function Habitos({ state, toggleHabit, addHabit, updateHabit, deleteHabit
       <div style={{ display:'grid', gridTemplateColumns: mobile ? '1fr' : '2fr 1fr', gap:14, marginBottom:20 }}>
         <Card color={SS.green}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
-            <CardTitle color={SS.green}>Progreso Diario — Abril</CardTitle>
+            <CardTitle color={SS.green}>Progreso Diario — {new Date().toLocaleDateString('es-MX',{month:'long'})}</CardTitle>
             <span style={{ fontSize:11, color:SS.green, fontWeight:700 }}>{avgPct}% avg</span>
           </div>
           <svg width="100%" viewBox={`0 0 ${W} ${H+8}`} style={{ display:'block' }}>

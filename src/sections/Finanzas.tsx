@@ -127,7 +127,7 @@ export function Finanzas({ state, togglePayment, addTransaction, addGoalFunds, d
     <div style={{ position:'relative' }}>
       <CircuitBg id="fn" opacity={0.05}/>
       <Blob color={SS.green} top={-40} right={-40}/>
-      <SectionHdr title="Finanzas" sub="Balance y objetivos — Abril 2026" color={SS.green} action="+ Transacción" onAction={() => setModal('tx')}/>
+      <SectionHdr title="Finanzas" sub={`Balance y objetivos — ${new Date().toLocaleDateString('es-MX',{month:'long',year:'numeric'})}`} color={SS.green} action="+ Transacción" onAction={() => setModal('tx')}/>
 
       <div style={{ display:'grid', gridTemplateColumns: mobile ? '1fr 1fr' : 'repeat(4,1fr)', gap:10, marginBottom:20 }}>
         {[

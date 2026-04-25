@@ -326,6 +326,24 @@ export function useStore() {
     setState(s => ({ ...s, fastGoalHours: hours }));
   }, []);
 
+  const exportData = useCallback(() => {
+    const json = JSON.stringify(state, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ss-dashboard-${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [state]);
+
+  const importData = useCallback((json: string) => {
+    try {
+      const parsed = JSON.parse(json);
+      setState({ ...defaultState, ...parsed, healthMetrics: { ...defaultState.healthMetrics, ...(parsed.healthMetrics ?? {}) } });
+    } catch { /* invalid JSON — ignore */ }
+  }, []);
+
   return {
     state, update,
     toggleHabit, addHabit, updateHabit, deleteHabit,
@@ -338,5 +356,6 @@ export function useStore() {
     setNote,
     toggleStudyTimer, toggleWorkTimer, addStudySession, addWorkSession, incrementPomodoro, resetPomodoro,
     updateHealthMetrics,
+    exportData, importData,
   };
 }

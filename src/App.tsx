@@ -47,6 +47,8 @@ export default function App() {
           active={state.section}
           setSection={setSection}
           collapsed={state.sidebarCollapsed}
+          onExport={store.exportData}
+          onImport={store.importData}
         />
       )}
 

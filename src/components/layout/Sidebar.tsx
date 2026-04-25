@@ -9,9 +9,9 @@ const NAV = [
   { id:'finanzas',      label:'Finanzas',      icon:'💰', color:'#ffe040' },
 ] as const;
 
-interface Props { active: SectionId; setSection: (s: SectionId) => void; collapsed: boolean; }
+interface Props { active: SectionId; setSection: (s: SectionId) => void; collapsed: boolean; onExport: () => void; onImport: (json: string) => void; }
 
-export function Sidebar({ active, setSection, collapsed }: Props) {
+export function Sidebar({ active, setSection, collapsed, onExport, onImport }: Props) {
   const w = collapsed ? 64 : 220;
   return (
     <div style={{
@@ -39,11 +39,22 @@ export function Sidebar({ active, setSection, collapsed }: Props) {
         })}
       </nav>
 
-      {!collapsed && (
-        <div style={{ padding:'16px 20px', borderTop:'1px solid rgba(0,170,255,0.07)' }}>
-          <div style={{ fontSize:9, color:'rgba(255,255,255,0.2)', letterSpacing:.5 }}>v1.0 · Apr 2026</div>
-        </div>
-      )}
+      <div style={{ padding: collapsed ? '12px 8px' : '12px 20px', borderTop:'1px solid rgba(0,170,255,0.07)', display:'flex', flexDirection: collapsed ? 'column' : 'row', gap:6, alignItems:'center' }}>
+        <button onClick={onExport} title="Exportar datos" style={{ flex: collapsed ? 'none' : 1, padding:'5px 8px', borderRadius:8, border:'1px solid rgba(0,170,255,0.15)', background:'transparent', color:'rgba(255,255,255,0.35)', fontSize: collapsed ? 14 : 10, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>
+          {collapsed ? '↓' : '↓ Exportar'}
+        </button>
+        <label title="Importar datos" style={{ flex: collapsed ? 'none' : 1, display:'flex', justifyContent:'center', padding:'5px 8px', borderRadius:8, border:'1px solid rgba(0,170,255,0.15)', color:'rgba(255,255,255,0.35)', fontSize: collapsed ? 14 : 10, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>
+          {collapsed ? '↑' : '↑ Importar'}
+          <input type="file" accept=".json" style={{ display:'none' }} onChange={e => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = ev => onImport(ev.target?.result as string);
+            reader.readAsText(file);
+            e.target.value = '';
+          }}/>
+        </label>
+      </div>
     </div>
   );
 }
