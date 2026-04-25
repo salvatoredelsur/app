@@ -23,6 +23,18 @@ export default function App() {
 
   const setSection = (s: SectionId) => update('section', s);
 
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const map: Partial<Record<string, SectionId>> = { d:'dashboard', s:'salud', p:'productividad', h:'habitos', f:'finanzas' };
+      const s = map[e.key.toLowerCase()];
+      if (s) setSection(s);
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, []);
+
   const renderSection = () => {
     switch (state.section) {
       case 'dashboard':
