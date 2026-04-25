@@ -37,7 +37,15 @@ export function Dashboard({ state, setSection, toggleHabit, setNote }: Props) {
   }, [state.fastStartTime, state.studyTimerStart, state.workTimerStart]);
 
   const weightTrend   = state.weightLog.slice(-14).map(e => e.kg);
-  const balanceTrend  = [38000,39500,40200,38800,41000,42500,41800,43200,44000,43500,44800,45230];
+  const balanceTrend  = (() => {
+    const monthly: Record<string, number> = {};
+    for (const t of state.transactions) {
+      const m = t.date.slice(0, 7);
+      monthly[m] = (monthly[m] ?? 0) + (t.type === 'income' ? t.amount : -t.amount);
+    }
+    const vals = Object.keys(monthly).sort().map(m => Math.max(0, monthly[m]));
+    return vals.length >= 2 ? vals : [38000,39500,40200,38800,41000,42500,41800,43200,44000,43500,44800,45230];
+  })();
   const completedToday = state.habitCompletions.filter(c => c.date === TODAY_STR).length;
   const totalHabits    = state.habits.length;
   const habitPct       = totalHabits > 0 ? Math.round((completedToday / totalHabits) * 100) : 0;
@@ -48,6 +56,17 @@ export function Dashboard({ state, setSection, toggleHabit, setNote }: Props) {
     + (state.workTimerStart ? Math.floor((Date.now() - new Date(state.workTimerStart).getTime()) / 60000) : 0);
   const studyH = +(studyMin / 60).toFixed(1);
   const workH  = +(workMin  / 60).toFixed(1);
+
+  const weekStudyH = +(Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const ds = d.toISOString().slice(0, 10);
+    return state.studySessions.filter(s => s.date === ds).reduce((a, b) => a + b.durationMin, 0);
+  }).reduce((a, b) => a + b, 0) / 60 + (state.studyTimerStart ? Math.floor((Date.now() - new Date(state.studyTimerStart).getTime()) / 60000) : 0) / 60).toFixed(1);
+  const weekWorkH  = +(Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const ds = d.toISOString().slice(0, 10);
+    return state.workSessions.filter(s => s.date === ds).reduce((a, b) => a + b.durationMin, 0);
+  }).reduce((a, b) => a + b, 0) / 60 + (state.workTimerStart ? Math.floor((Date.now() - new Date(state.workTimerStart).getTime()) / 60000) : 0) / 60).toFixed(1);
 
   const income  = state.transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
   const expense = state.transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
@@ -149,7 +168,13 @@ export function Dashboard({ state, setSection, toggleHabit, setNote }: Props) {
 
       {/* Productividad */}
       <Card color={SS.yellow}>
-        <CardTitle color={SS.yellow}>Productividad de Hoy</CardTitle>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
+          <CardTitle color={SS.yellow}>Productividad de Hoy</CardTitle>
+          <div style={{ display:'flex', gap:10, fontSize:9, color:SS.dimText }}>
+            <span>Esta semana: <b style={{ color:SS.yellow }}>{weekStudyH}h</b> est.</span>
+            <span><b style={{ color:SS.blue }}>{weekWorkH}h</b> trab.</span>
+          </div>
+        </div>
         <div style={{ display:'grid', gridTemplateColumns: mobile ? '1fr' : '1fr 1fr', gap:16 }}>
           {[
             { label:'Horas Estudio', current: studyH, goal:6, color:SS.yellow, running: !!state.studyTimerStart, subject: state.studyTimerSubject },
