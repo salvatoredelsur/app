@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { AppState, Project } from '../store/useStore';
 import { SS } from '../tokens';
 import { CircuitBg } from '../components/shared/CircuitBg';
@@ -8,12 +8,18 @@ import { Card, CardTitle } from '../components/shared/Card';
 import { Bar } from '../components/shared/Bar';
 import { Donut } from '../components/shared/Donut';
 
-interface Props { state: AppState; addProject: (p: Omit<Project, 'id'>) => void; }
+interface Props {
+  state: AppState;
+  addProject: (p: Omit<Project, 'id'>) => void;
+  toggleStudyTimer: (subject?: string) => void;
+  toggleWorkTimer: (project?: string) => void;
+  incrementPomodoro: () => void;
+}
 
 const TODAY_STR = new Date().toISOString().slice(0, 10);
 const WEEK_DAYS = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
-const STUDY_HRS = [4,5,3,6,3.5,2,1];
-const WORK_HRS  = [7,8,6,8,5,3,0];
+const STUDY_HRS_DEMO = [4,5,3,6,3.5,2,1];
+const WORK_HRS_DEMO  = [7,8,6,8,5,3,0];
 
 const SUBJECTS = [
   { name:'Inteligencia Artificial', hrs:12.5, color:SS.cyan },
@@ -22,16 +28,43 @@ const SUBJECTS = [
   { name:'Finanzas Personales',     hrs:3.0,  color:SS.green },
 ];
 
-const MAX_HRS = Math.max(...STUDY_HRS, ...WORK_HRS);
+const MAX_HRS = Math.max(...STUDY_HRS_DEMO, ...WORK_HRS_DEMO);
 
-export function Productividad({ state, addProject }: Props) {
+function fmt(secs: number) {
+  const h = Math.floor(secs / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  const s = secs % 60;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+export function Productividad({ state, addProject, toggleStudyTimer, toggleWorkTimer, incrementPomodoro }: Props) {
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({ name:'', cat:'', deadline:'', color: SS.cyan });
+  const [form, setForm] = useState<{ name:string; cat:string; deadline:string; color:string }>({ name:'', cat:'', deadline:'', color: SS.cyan });
+  const [studyElapsed, setStudyElapsed] = useState(0);
+  const [workElapsed, setWorkElapsed] = useState(0);
 
-  const studyMin = state.studySessions.filter(s => s.date === TODAY_STR).reduce((a, b) => a + b.durationMin, 0);
-  const workMin  = state.workSessions.filter(s => s.date === TODAY_STR).reduce((a, b) => a + b.durationMin, 0);
-  const studyH = +(studyMin / 60).toFixed(1) || 3.5;
-  const workH  = +(workMin  / 60).toFixed(1) || 5.0;
+  useEffect(() => {
+    if (!state.studyTimerStart) { setStudyElapsed(0); return; }
+    const tick = () => setStudyElapsed(Math.floor((Date.now() - new Date(state.studyTimerStart!).getTime()) / 1000));
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [state.studyTimerStart]);
+
+  useEffect(() => {
+    if (!state.workTimerStart) { setWorkElapsed(0); return; }
+    const tick = () => setWorkElapsed(Math.floor((Date.now() - new Date(state.workTimerStart!).getTime()) / 1000));
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [state.workTimerStart]);
+
+  const studyMin = state.studySessions.filter(s => s.date === TODAY_STR).reduce((a, b) => a + b.durationMin, 0)
+    + (state.studyTimerStart ? Math.floor(studyElapsed / 60) : 0);
+  const workMin  = state.workSessions.filter(s => s.date === TODAY_STR).reduce((a, b) => a + b.durationMin, 0)
+    + (state.workTimerStart ? Math.floor(workElapsed / 60) : 0);
+  const studyH = +((studyMin || 210) / 60).toFixed(1);
+  const workH  = +((workMin  || 300) / 60).toFixed(1);
 
   const handleAdd = () => {
     if (!form.name.trim()) return;
@@ -44,7 +77,7 @@ export function Productividad({ state, addProject }: Props) {
     { label:'Estudio Hoy',       current: studyH, goal:6,  color:SS.yellow, noUnit:false },
     { label:'Trabajo Hoy',       current: workH,  goal:8,  color:SS.blue,   noUnit:false },
     { label:'Focus (Pomodoros)', current: state.pomodoroCount, goal:10, color:SS.cyan, noUnit:true },
-    { label:'Proyectos Act.',    current: state.projects.length, goal: state.projects.length || 5, color:SS.green, noUnit:true },
+    { label:'Proyectos Act.',    current: state.projects.length, goal: Math.max(state.projects.length, 5), color:SS.green, noUnit:true },
   ];
 
   return (
@@ -53,10 +86,11 @@ export function Productividad({ state, addProject }: Props) {
       <Blob color={SS.yellow} top={-40} left={-40}/>
       <SectionHdr title="Productividad" sub="Estudio, trabajo y proyectos" color={SS.yellow} action="+ Proyecto" onAction={() => setShowModal(true)}/>
 
+      {/* Today rings */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12, marginBottom:20 }}>
         {rings.map((item, i) => (
           <Card key={i} color={item.color} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:8, padding:'16px 10px' }}>
-            <Donut pct={(item.current / item.goal) * 100} color={item.color} size={72} stroke={8}
+            <Donut pct={Math.min((item.current / item.goal) * 100, 100)} color={item.color} size={72} stroke={8}
               label={item.noUnit ? `${item.current}` : `${item.current}h`}/>
             <div style={{ textAlign:'center' }}>
               <div style={{ fontSize:10, fontWeight:600, color:'rgba(255,255,255,0.7)', letterSpacing:.3 }}>{item.label}</div>
@@ -66,14 +100,71 @@ export function Productividad({ state, addProject }: Props) {
         ))}
       </div>
 
+      {/* Session timers row */}
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12, marginBottom:20 }}>
+        {/* Study timer */}
+        <Card color={SS.yellow} style={{ display:'flex', alignItems:'center', gap:14 }}>
+          <div style={{ flex:1 }}>
+            <CardTitle color={SS.yellow}>Timer Estudio</CardTitle>
+            <div style={{ fontSize:20, fontWeight:800, color:'white', fontVariantNumeric:'tabular-nums' }}>
+              {state.studyTimerStart ? fmt(studyElapsed) : '00:00:00'}
+            </div>
+          </div>
+          <button onClick={() => toggleStudyTimer('General')} style={{
+            padding:'8px 14px', borderRadius:10, border:`1px solid ${state.studyTimerStart ? SS.red : SS.yellow}50`,
+            background: state.studyTimerStart ? `${SS.red}22` : `${SS.yellow}22`,
+            color: state.studyTimerStart ? SS.red : SS.yellow,
+            fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:"'DM Sans',sans-serif", whiteSpace:'nowrap',
+          }}>
+            {state.studyTimerStart ? '⏹ Stop' : '▶ Start'}
+          </button>
+        </Card>
+
+        {/* Work timer */}
+        <Card color={SS.blue} style={{ display:'flex', alignItems:'center', gap:14 }}>
+          <div style={{ flex:1 }}>
+            <CardTitle color={SS.blue}>Timer Trabajo</CardTitle>
+            <div style={{ fontSize:20, fontWeight:800, color:'white', fontVariantNumeric:'tabular-nums' }}>
+              {state.workTimerStart ? fmt(workElapsed) : '00:00:00'}
+            </div>
+          </div>
+          <button onClick={() => toggleWorkTimer('General')} style={{
+            padding:'8px 14px', borderRadius:10, border:`1px solid ${state.workTimerStart ? SS.red : SS.blue}50`,
+            background: state.workTimerStart ? `${SS.red}22` : `${SS.blue}22`,
+            color: state.workTimerStart ? SS.red : SS.blue,
+            fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:"'DM Sans',sans-serif", whiteSpace:'nowrap',
+          }}>
+            {state.workTimerStart ? '⏹ Stop' : '▶ Start'}
+          </button>
+        </Card>
+
+        {/* Pomodoro */}
+        <Card color={SS.cyan} style={{ display:'flex', alignItems:'center', gap:14 }}>
+          <div style={{ flex:1 }}>
+            <CardTitle color={SS.cyan}>Pomodoros Hoy</CardTitle>
+            <div style={{ fontSize:28, fontWeight:900, color:SS.cyan, textShadow:`0 0 18px ${SS.cyan}80` }}>
+              {state.pomodoroCount}<span style={{ fontSize:13, fontWeight:500, color:SS.dimText }}>/10</span>
+            </div>
+          </div>
+          <button onClick={incrementPomodoro} style={{
+            padding:'8px 14px', borderRadius:10, border:`1px solid ${SS.cyan}50`,
+            background:`${SS.cyan}22`, color:SS.cyan,
+            fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:"'DM Sans',sans-serif", whiteSpace:'nowrap',
+          }}>
+            + 1 🍅
+          </button>
+        </Card>
+      </div>
+
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14, marginBottom:20 }}>
+        {/* Weekly chart */}
         <Card color={SS.yellow}>
           <CardTitle color={SS.yellow}>Horas Semanales</CardTitle>
           <div style={{ display:'flex', alignItems:'flex-end', gap:6, height:80, marginBottom:4 }}>
             {WEEK_DAYS.map((d, i) => (
               <div key={d} style={{ flex:1, display:'flex', flexDirection:'column', gap:1, alignItems:'stretch' }}>
-                <div style={{ background:SS.blue, borderRadius:'3px 3px 0 0', height:`${(WORK_HRS[i]/MAX_HRS)*64}px`, boxShadow:`0 0 5px ${SS.blue}55` }}/>
-                <div style={{ background:SS.yellow, borderRadius:'0 0 3px 3px', height:`${(STUDY_HRS[i]/MAX_HRS)*64}px`, boxShadow:`0 0 5px ${SS.yellow}55` }}/>
+                <div style={{ background:SS.blue, borderRadius:'3px 3px 0 0', height:`${(WORK_HRS_DEMO[i]/MAX_HRS)*64}px`, boxShadow:`0 0 5px ${SS.blue}55` }}/>
+                <div style={{ background:SS.yellow, borderRadius:'0 0 3px 3px', height:`${(STUDY_HRS_DEMO[i]/MAX_HRS)*64}px`, boxShadow:`0 0 5px ${SS.yellow}55` }}/>
               </div>
             ))}
           </div>
@@ -90,6 +181,7 @@ export function Productividad({ state, addProject }: Props) {
           </div>
         </Card>
 
+        {/* Subjects */}
         <Card color={SS.cyan}>
           <CardTitle color={SS.cyan}>Materias — Este Mes</CardTitle>
           {SUBJECTS.map((s, i) => (
@@ -104,6 +196,7 @@ export function Productividad({ state, addProject }: Props) {
         </Card>
       </div>
 
+      {/* Projects list */}
       <Card color={SS.cyan}>
         <CardTitle color={SS.cyan}>Proyectos en Seguimiento</CardTitle>
         <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
@@ -151,6 +244,14 @@ export function Productividad({ state, addProject }: Props) {
                 />
               </div>
             ))}
+            <div style={{ marginBottom:12 }}>
+              <label style={{ fontSize:11, color:SS.dimText, display:'block', marginBottom:6 }}>Color</label>
+              <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+                {[SS.cyan, SS.yellow, SS.green, SS.pink, SS.blue, SS.orange, SS.purple, SS.red].map(c => (
+                  <div key={c} onClick={() => setForm(prev => ({ ...prev, color: c }))} style={{ width:22, height:22, borderRadius:6, background:c, cursor:'pointer', border: form.color === c ? `2px solid white` : `2px solid transparent`, boxShadow: form.color === c ? `0 0 8px ${c}` : 'none' }}/>
+                ))}
+              </div>
+            </div>
             <button onClick={handleAdd} style={{ marginTop:4, width:'100%', padding:'10px', background:SS.yellow, color:SS.bg, border:'none', borderRadius:10, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>Crear Proyecto</button>
           </div>
         </div>

@@ -23,6 +23,8 @@ export interface AppState {
   projects: Project[];
   studySessions: { date: string; subject: string; durationMin: number }[];
   workSessions: { date: string; project: string; durationMin: number }[];
+  studyTimerStart: string | null;
+  workTimerStart: string | null;
   pomodoroCount: number;
   transactions: Transaction[];
   payments: Payment[];
@@ -36,6 +38,8 @@ const defaultState: AppState = {
   sidebarCollapsed: false,
   fastStartTime: null,
   fastGoalHours: 16,
+  studyTimerStart: null,
+  workTimerStart: null,
   weightLog: (() => {
     const arr: WeightEntry[] = [];
     const vals = [82.0,81.8,81.5,81.2,80.9,80.6,80.2,80.1,79.8,79.5,79.2,79.0,78.8,78.7,78.5,78.4,78.5,78.3,78.1,78.5,78.3,78.2,78.0,78.1,78.5,78.3,78.2,78.5,78.4,78.5];
@@ -201,5 +205,42 @@ export function useStore() {
     }));
   }, []);
 
-  return { state, update, toggleHabit, togglePayment, addWeight, toggleFast, addTransaction, addGoalFunds, addProject };
+  const addHabit = useCallback((h: Omit<Habit, 'id'>) => {
+    setState(s => ({
+      ...s,
+      habits: [...s.habits, { ...h, id: Date.now() }],
+    }));
+  }, []);
+
+  const toggleStudyTimer = useCallback((subject = 'General') => {
+    setState(s => {
+      if (s.studyTimerStart) {
+        const elapsed = Math.round((Date.now() - new Date(s.studyTimerStart).getTime()) / 60000);
+        if (elapsed > 0) {
+          return { ...s, studyTimerStart: null, studySessions: [...s.studySessions, { date: today(), subject, durationMin: elapsed }] };
+        }
+        return { ...s, studyTimerStart: null };
+      }
+      return { ...s, studyTimerStart: new Date().toISOString() };
+    });
+  }, []);
+
+  const toggleWorkTimer = useCallback((project = 'General') => {
+    setState(s => {
+      if (s.workTimerStart) {
+        const elapsed = Math.round((Date.now() - new Date(s.workTimerStart).getTime()) / 60000);
+        if (elapsed > 0) {
+          return { ...s, workTimerStart: null, workSessions: [...s.workSessions, { date: today(), project, durationMin: elapsed }] };
+        }
+        return { ...s, workTimerStart: null };
+      }
+      return { ...s, workTimerStart: new Date().toISOString() };
+    });
+  }, []);
+
+  const incrementPomodoro = useCallback(() => {
+    setState(s => ({ ...s, pomodoroCount: s.pomodoroCount + 1 }));
+  }, []);
+
+  return { state, update, toggleHabit, togglePayment, addWeight, toggleFast, addTransaction, addGoalFunds, addProject, addHabit, toggleStudyTimer, toggleWorkTimer, incrementPomodoro };
 }

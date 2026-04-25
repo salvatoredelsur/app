@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { AppState } from '../store/useStore';
+import type { AppState, Habit } from '../store/useStore';
 import { SS } from '../tokens';
 import { CircuitBg } from '../components/shared/CircuitBg';
 import { Blob } from '../components/shared/Blob';
@@ -11,18 +11,21 @@ import { Donut } from '../components/shared/Donut';
 interface Props {
   state: AppState;
   toggleHabit: (id: number, date: string) => void;
+  addHabit: (h: Omit<Habit, 'id'>) => void;
 }
 
 const WEEK_DAYS = ['L','M','X','J','V','S','D'];
+const HABIT_COLORS = [SS.green, SS.pink, SS.blue, SS.yellow, SS.orange, SS.purple, SS.cyan, '#ff9f43', '#74b9ff', '#fd79a8'];
 
 function getDateStr(daysAgo: number) {
   const d = new Date(); d.setDate(d.getDate() - daysAgo);
   return d.toISOString().slice(0, 10);
 }
 
-export function Habitos({ state, toggleHabit }: Props) {
+export function Habitos({ state, toggleHabit, addHabit }: Props) {
   const [showModal, setShowModal] = useState(false);
   const [newHabitName, setNewHabitName] = useState('');
+  const [newHabitColor, setNewHabitColor] = useState<string>(SS.green);
 
   const { habits, habitCompletions } = state;
 
@@ -30,7 +33,8 @@ export function Habitos({ state, toggleHabit }: Props) {
   const possibleTotal  = habits.length * 25;
   const remainingEst   = Math.max(0, possibleTotal - completedTotal);
 
-  const streaks = habits.map(h => {
+  // Per-habit streaks
+  const habitStreaks = habits.map(h => {
     let streak = 0;
     for (let i = 0; i < 60; i++) {
       const date = getDateStr(i);
@@ -39,8 +43,21 @@ export function Habitos({ state, toggleHabit }: Props) {
     }
     return streak;
   });
-  const maxStreak = Math.max(...streaks, 0);
-  const curStreak = streaks.length > 0 ? Math.max(...streaks) : 0;
+
+  // Overall daily streak: consecutive days where at least half habits were done
+  const overallStreak = (() => {
+    if (habits.length === 0) return 0;
+    let streak = 0;
+    for (let i = 0; i < 60; i++) {
+      const date = getDateStr(i);
+      const done = habitCompletions.filter(c => c.date === date).length;
+      if (done >= Math.ceil(habits.length / 2)) streak++;
+      else break;
+    }
+    return streak;
+  })();
+
+  const maxStreak = Math.max(...habitStreaks, overallStreak, 0);
 
   const totalPossible = habits.length * 30;
   const avgPct = totalPossible > 0 ? Math.round((completedTotal / totalPossible) * 100) : 0;
@@ -67,10 +84,18 @@ export function Habitos({ state, toggleHabit }: Props) {
 
   const topHabits = habits.map((h, i) => {
     const done = habitCompletions.filter(c => c.habitId === h.id).length;
-    return { ...h, pct: Math.round((done / 25) * 100), streak: streaks[i] ?? 0 };
+    return { ...h, pct: Math.round((done / 25) * 100), streak: habitStreaks[i] ?? 0 };
   }).sort((a, b) => b.pct - a.pct);
 
   const RANK_COLORS = [SS.yellow, 'rgba(200,210,230,0.8)', '#cd7f32'];
+
+  const handleAddHabit = () => {
+    if (!newHabitName.trim()) return;
+    addHabit({ name: newHabitName.trim(), color: newHabitColor });
+    setShowModal(false);
+    setNewHabitName('');
+    setNewHabitColor(SS.green);
+  };
 
   return (
     <div style={{ position:'relative' }}>
@@ -82,7 +107,7 @@ export function Habitos({ state, toggleHabit }: Props) {
         {[
           { lb:'Completados', val: String(completedTotal), c:SS.green  },
           { lb:'Restantes',   val: String(remainingEst),   c:SS.pink   },
-          { lb:'Días racha',  val: String(curStreak),      c:SS.yellow },
+          { lb:'Días racha',  val: String(overallStreak),  c:SS.yellow },
           { lb:'Mejor racha', val: String(maxStreak),      c:SS.cyan   },
         ].map((s, i) => (
           <Card key={i} color={s.c} style={{ textAlign:'center', padding:'12px 8px' }}>
@@ -118,7 +143,7 @@ export function Habitos({ state, toggleHabit }: Props) {
             <div style={{ display:'flex', alignItems:'flex-end', gap:4, height:50 }}>
               {weekVals.map((v, i) => (
                 <div key={i} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:3 }}>
-                  <div style={{ width:'100%', height:`${(v/100)*46}px`, background: habits[i % habits.length]?.color || SS.purple, borderRadius:3, boxShadow:`0 0 5px ${habits[i % habits.length]?.color || SS.purple}60` }}/>
+                  <div style={{ width:'100%', height:`${Math.max((v/100)*46, 2)}px`, background: habits[i % Math.max(habits.length,1)]?.color || SS.purple, borderRadius:3, boxShadow:`0 0 5px ${habits[i % Math.max(habits.length,1)]?.color || SS.purple}60` }}/>
                   <span style={{ fontSize:7.5, color:SS.mutedText }}>{WEEK_DAYS[i]}</span>
                 </div>
               ))}
@@ -133,11 +158,12 @@ export function Habitos({ state, toggleHabit }: Props) {
       <Card color={SS.blue} style={{ marginBottom:14 }}>
         <CardTitle color={SS.blue}>Cuadrícula Mensual</CardTitle>
         <div style={{ overflowX:'auto' }}>
+          {habits.length === 0 && <div style={{ fontSize:11, color:SS.dimText, padding:'8px 0' }}>No hay hábitos aún. Añade uno con + Hábito.</div>}
           {habits.map((habit) => (
             <div key={habit.id} style={{ display:'flex', alignItems:'center', gap:4, marginBottom:5 }}>
-              <div style={{ display:'flex', alignItems:'center', gap:5, minWidth:80 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:5, minWidth:80, flexShrink:0 }}>
                 <div style={{ width:7, height:7, borderRadius:2, background:habit.color, flexShrink:0 }}/>
-                <span style={{ fontSize:9, color:'rgba(255,255,255,0.55)', whiteSpace:'nowrap' }}>{habit.name}</span>
+                <span style={{ fontSize:9, color:'rgba(255,255,255,0.55)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', maxWidth:68 }}>{habit.name}</span>
               </div>
               <div style={{ display:'flex', gap:2 }}>
                 {Array.from({ length: 25 }, (_, di) => {
@@ -166,6 +192,7 @@ export function Habitos({ state, toggleHabit }: Props) {
 
       <Card color={SS.cyan}>
         <CardTitle color={SS.cyan}>Ranking del Mes</CardTitle>
+        {topHabits.length === 0 && <div style={{ fontSize:11, color:SS.dimText }}>Sin datos aún.</div>}
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'6px 20px' }}>
           {topHabits.map((h, i) => (
             <div key={h.id} style={{ display:'flex', alignItems:'center', gap:8 }}>
@@ -184,16 +211,23 @@ export function Habitos({ state, toggleHabit }: Props) {
 
       {showModal && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.7)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 }} onClick={() => setShowModal(false)}>
-          <div style={{ background:'#0c1828', borderRadius:16, padding:24, minWidth:280, border:`1px solid ${SS.purple}30` }} onClick={e => e.stopPropagation()}>
+          <div style={{ background:'#0c1828', borderRadius:16, padding:24, minWidth:300, border:`1px solid ${SS.purple}30`, boxShadow:`0 0 40px ${SS.purple}20` }} onClick={e => e.stopPropagation()}>
             <div style={{ fontSize:14, fontWeight:700, color:'white', marginBottom:16 }}>Nuevo Hábito</div>
             <label style={{ fontSize:11, color:SS.dimText, display:'block', marginBottom:4 }}>Nombre</label>
             <input
               value={newHabitName} onChange={e => setNewHabitName(e.target.value)}
-              placeholder="Meditación..."
-              style={{ width:'100%', background:SS.card2, border:`1px solid ${SS.purple}40`, borderRadius:8, padding:'8px 12px', color:'white', fontSize:13, fontFamily:"'DM Sans',sans-serif", outline:'none', marginBottom:10 }}
+              onKeyDown={e => e.key === 'Enter' && handleAddHabit()}
+              placeholder="Meditación 10 min..."
+              style={{ width:'100%', background:SS.card2, border:`1px solid ${SS.purple}40`, borderRadius:8, padding:'8px 12px', color:'white', fontSize:13, fontFamily:"'DM Sans',sans-serif", outline:'none', marginBottom:12 }}
               autoFocus
             />
-            <button onClick={() => { if(newHabitName.trim()) { setShowModal(false); setNewHabitName(''); } }} style={{ width:'100%', padding:'10px', background:SS.purple, color:'white', border:'none', borderRadius:10, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>Crear Hábito</button>
+            <label style={{ fontSize:11, color:SS.dimText, display:'block', marginBottom:6 }}>Color</label>
+            <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginBottom:14 }}>
+              {HABIT_COLORS.map(c => (
+                <div key={c} onClick={() => setNewHabitColor(c)} style={{ width:22, height:22, borderRadius:6, background:c, cursor:'pointer', border: newHabitColor === c ? `2px solid white` : `2px solid transparent`, boxShadow: newHabitColor === c ? `0 0 8px ${c}` : 'none', transition:'box-shadow .15s' }}/>
+              ))}
+            </div>
+            <button onClick={handleAddHabit} style={{ width:'100%', padding:'10px', background:SS.purple, color:'white', border:'none', borderRadius:10, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>Crear Hábito</button>
           </div>
         </div>
       )}

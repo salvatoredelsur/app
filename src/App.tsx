@@ -30,9 +30,9 @@ export default function App() {
       case 'salud':
         return <Salud state={state} toggleFast={store.toggleFast} addWeight={store.addWeight}/>;
       case 'productividad':
-        return <Productividad state={state} addProject={store.addProject}/>;
+        return <Productividad state={state} addProject={store.addProject} toggleStudyTimer={store.toggleStudyTimer} toggleWorkTimer={store.toggleWorkTimer} incrementPomodoro={store.incrementPomodoro}/>;
       case 'habitos':
-        return <Habitos state={state} toggleHabit={store.toggleHabit}/>;
+        return <Habitos state={state} toggleHabit={store.toggleHabit} addHabit={store.addHabit}/>;
       case 'finanzas':
         return <Finanzas state={state} togglePayment={store.togglePayment} addTransaction={store.addTransaction} addGoalFunds={store.addGoalFunds}/>;
       default:
