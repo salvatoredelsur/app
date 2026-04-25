@@ -376,16 +376,29 @@ export function Finanzas({ state, togglePayment, addTransaction, addGoalFunds, d
       )}
 
       {/* Agregar fondos a objetivo */}
-      {modal === 'goalfunds' && goalFundsId !== null && (
-        <Modal title="Agregar fondos" color={SS.yellow} onClose={() => { setModal(null); setGoalFundsId(null); }}>
-          <div style={{ fontSize:12, color:'white', fontWeight:600, marginBottom:12 }}>{state.goals.find(g => g.id === goalFundsId)?.name}</div>
-          <label style={{ fontSize:11, color:SS.dimText, display:'block', marginBottom:6 }}>Monto a agregar ($)</label>
-          <input type="number" value={goalAmount} onChange={e => setGoalAmount(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleAddGoalFunds()}
-            placeholder="500" autoFocus style={inputStyle(SS.yellow)}/>
-          <button onClick={handleAddGoalFunds} style={{ marginTop:12, width:'100%', padding:'10px', background:SS.yellow, color:SS.bg, border:'none', borderRadius:10, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>Agregar</button>
-        </Modal>
-      )}
+      {modal === 'goalfunds' && goalFundsId !== null && (() => {
+        const goal = state.goals.find(g => g.id === goalFundsId);
+        if (!goal) return null;
+        const pct = Math.min(100, Math.round((goal.current / goal.target) * 100));
+        const remaining = Math.max(0, goal.target - goal.current);
+        return (
+          <Modal title={`Agregar fondos — ${goal.name}`} color={goal.color} onClose={() => { setModal(null); setGoalFundsId(null); }}>
+            <div style={{ background:`${goal.color}12`, border:`1px solid ${goal.color}25`, borderRadius:10, padding:'10px 12px', marginBottom:14 }}>
+              <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}>
+                <span style={{ fontSize:11, color:'rgba(255,255,255,0.6)' }}>${goal.current.toLocaleString()} ahorrado</span>
+                <span style={{ fontSize:11, color:goal.color, fontWeight:700 }}>{pct}%</span>
+              </div>
+              <Bar pct={pct} color={goal.color} height={5}/>
+              <div style={{ fontSize:10, color:SS.dimText, marginTop:5 }}>Faltan ${remaining.toLocaleString()} para la meta de ${goal.target.toLocaleString()}</div>
+            </div>
+            <label style={{ fontSize:11, color:SS.dimText, display:'block', marginBottom:6 }}>Monto a agregar ($)</label>
+            <input type="number" value={goalAmount} onChange={e => setGoalAmount(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleAddGoalFunds()}
+              placeholder="500" autoFocus style={inputStyle(goal.color)}/>
+            <button onClick={handleAddGoalFunds} style={{ marginTop:12, width:'100%', padding:'10px', background:goal.color, color:SS.bg, border:'none', borderRadius:10, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>Agregar fondos</button>
+          </Modal>
+        );
+      })()}
     </div>
   );
 }

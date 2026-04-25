@@ -112,7 +112,11 @@ export function Productividad({ state, addProject, updateProject, deleteProject,
     setSessionForm({ type:'study', subject:'', hours:'', minutes:'' });
   };
 
-  // Compute subjects from real study sessions (last 30 days), fallback to defaults
+  const MONTH_STR = new Date().toISOString().slice(0, 7); // 'YYYY-MM'
+  const monthStudyH = +(state.studySessions.filter(s => s.date.startsWith(MONTH_STR)).reduce((a, b) => a + b.durationMin, 0) / 60).toFixed(1);
+  const monthWorkH  = +(state.workSessions.filter(s => s.date.startsWith(MONTH_STR)).reduce((a, b) => a + b.durationMin, 0) / 60).toFixed(1);
+
+  // Compute subjects from real study sessions (all time), fallback to defaults
   const computedSubjects = (() => {
     const bySubject: Record<string, number> = {};
     for (const s of state.studySessions) {
@@ -135,7 +139,7 @@ export function Productividad({ state, addProject, updateProject, deleteProject,
     <div style={{ position:'relative' }}>
       <CircuitBg id="pr" opacity={0.05}/>
       <Blob color={SS.yellow} top={-40} left={-40}/>
-      <SectionHdr title="Productividad" sub="Estudio, trabajo y proyectos" color={SS.yellow} action="+ Proyecto" onAction={() => setShowModal(true)}/>
+      <SectionHdr title="Productividad" sub={`Este mes: ${monthStudyH}h estudio · ${monthWorkH}h trabajo`} color={SS.yellow} action="+ Proyecto" onAction={() => setShowModal(true)}/>
       <div style={{ display:'flex', gap:8, marginBottom:16, marginTop:-10 }}>
         <button onClick={() => { setSessionForm(p => ({ ...p, type:'study' })); setShowSessionModal(true); }}
           style={{ fontSize:10, color:SS.yellow, background:`${SS.yellow}12`, border:`1px solid ${SS.yellow}30`, borderRadius:14, padding:'4px 12px', cursor:'pointer', fontFamily:"'DM Sans',sans-serif", fontWeight:600 }}>+ Sesión estudio</button>
