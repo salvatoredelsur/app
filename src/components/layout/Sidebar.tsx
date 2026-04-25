@@ -9,9 +9,9 @@ const NAV = [
   { id:'finanzas',      label:'Finanzas',      icon:'💰', color:'#ffe040' },
 ] as const;
 
-interface Props { active: SectionId; setSection: (s: SectionId) => void; collapsed: boolean; onExport: () => void; onImport: (json: string) => void; }
+interface Props { active: SectionId; setSection: (s: SectionId) => void; collapsed: boolean; onExport: () => void; onImport: (json: string) => void; timerRunning?: boolean; }
 
-export function Sidebar({ active, setSection, collapsed, onExport, onImport }: Props) {
+export function Sidebar({ active, setSection, collapsed, onExport, onImport, timerRunning }: Props) {
   const w = collapsed ? 64 : 220;
   return (
     <div style={{
@@ -35,7 +35,8 @@ export function Sidebar({ active, setSection, collapsed, onExport, onImport }: P
       <nav style={{ flex:1, padding:'16px 8px', display:'flex', flexDirection:'column', gap:4 }}>
         {NAV.map(item => {
           const isActive = active === item.id;
-          return <NavItem key={item.id} item={item} isActive={isActive} collapsed={collapsed} onClick={() => setSection(item.id as SectionId)}/>;
+          const showTimer = item.id === 'productividad' && timerRunning && !isActive;
+          return <NavItem key={item.id} item={item} isActive={isActive} collapsed={collapsed} showTimer={showTimer} onClick={() => setSection(item.id as SectionId)}/>;
         })}
       </nav>
 
@@ -59,7 +60,7 @@ export function Sidebar({ active, setSection, collapsed, onExport, onImport }: P
   );
 }
 
-function NavItem({ item, isActive, collapsed, onClick }: { item: typeof NAV[number]; isActive: boolean; collapsed: boolean; onClick: () => void }) {
+function NavItem({ item, isActive, collapsed, showTimer, onClick }: { item: typeof NAV[number]; isActive: boolean; collapsed: boolean; showTimer?: boolean; onClick: () => void }) {
   const [hov, setHov] = useState(false);
   return (
     <button
@@ -75,7 +76,10 @@ function NavItem({ item, isActive, collapsed, onClick }: { item: typeof NAV[numb
         transition:'all .15s', overflow:'hidden', width:'100%', textAlign:'left',
       }}
     >
-      <span style={{ fontSize:16, flexShrink:0 }}>{item.icon}</span>
+      <div style={{ position:'relative', flexShrink:0 }}>
+        <span style={{ fontSize:16 }}>{item.icon}</span>
+        {showTimer && <div style={{ position:'absolute', top:-2, right:-2, width:7, height:7, borderRadius:'50%', background:'#ffe040', boxShadow:'0 0 6px #ffe040', animation:'pulse-dot 1.5s ease-in-out infinite' }}/>}
+      </div>
       {!collapsed && (
         <span style={{
           fontSize:12, fontWeight: isActive ? 700 : 500,

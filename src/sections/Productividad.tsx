@@ -128,11 +128,15 @@ export function Productividad({ state, addProject, updateProject, deleteProject,
   })();
   const maxSubjectHrs = Math.max(...computedSubjects.map(s => s.hrs), 1);
 
+  const avgProjectPct = state.projects.length > 0
+    ? Math.round(state.projects.reduce((s, p) => s + p.pct, 0) / state.projects.length)
+    : 0;
+
   const rings = [
-    { label:'Estudio Hoy',       current: studyH, goal:6,  color:SS.yellow, noUnit:false },
-    { label:'Trabajo Hoy',       current: workH,  goal:8,  color:SS.blue,   noUnit:false },
-    { label:'Pomodoros',         current: state.pomodoroCount, goal:10, color:SS.cyan, noUnit:true },
-    { label:'Proyectos Act.',    current: state.projects.length, goal: Math.max(state.projects.length, 5), color:SS.green, noUnit:true },
+    { label:'Estudio Hoy',   current: studyH,               goal:6,   color:SS.yellow, unit:'h' },
+    { label:'Trabajo Hoy',   current: workH,                goal:8,   color:SS.blue,   unit:'h' },
+    { label:'Pomodoros',     current: state.pomodoroCount,  goal:10,  color:SS.cyan,   unit:''  },
+    { label:'Proy. promedio',current: avgProjectPct,        goal:100, color:SS.green,  unit:'%' },
   ];
 
   return (
@@ -152,10 +156,10 @@ export function Productividad({ state, addProject, updateProject, deleteProject,
         {rings.map((item, i) => (
           <Card key={i} color={item.color} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:8, padding:'16px 10px' }}>
             <Donut pct={Math.min((item.current / item.goal) * 100, 100)} color={item.color} size={72} stroke={8}
-              label={item.noUnit ? `${item.current}` : `${item.current}h`}/>
+              label={`${item.current}${item.unit}`}/>
             <div style={{ textAlign:'center' }}>
               <div style={{ fontSize:10, fontWeight:600, color:'rgba(255,255,255,0.7)', letterSpacing:.3 }}>{item.label}</div>
-              <div style={{ fontSize:9, color:SS.dimText }}>{item.current}/{item.goal}{item.noUnit ? '' : ' h'}</div>
+              <div style={{ fontSize:9, color:SS.dimText }}>{item.current}/{item.goal}{item.unit ? item.unit : ''}</div>
             </div>
           </Card>
         ))}

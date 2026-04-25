@@ -49,6 +49,7 @@ export default function App() {
           collapsed={state.sidebarCollapsed}
           onExport={store.exportData}
           onImport={store.importData}
+          timerRunning={!!(state.studyTimerStart || state.workTimerStart)}
         />
       )}
 
