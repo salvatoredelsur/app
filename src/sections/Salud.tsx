@@ -67,11 +67,14 @@ export function Salud({ state, toggleFast, addWeight, setFastGoal, updateHealthM
 
   const { imc, grasa, musculo } = state.healthMetrics;
 
+  const imcStatus = imc < 18.5 ? 'Bajo peso' : imc < 25 ? 'Normal ✓' : imc < 30 ? 'Sobrepeso' : 'Obesidad';
+  const imcPct = imc >= 18.5 && imc < 25 ? 100 : imc < 18.5 ? Math.round((imc / 18.5) * 90) : Math.max(0, Math.round(100 - (imc - 25) * 6));
+
   const metrics = [
-    { label:'Peso actual', value:`${currentWeight}`, unit:'kg', color:SS.green,  goal:'Meta: 75 kg',  pct: weightPct, action: () => setShowWeightModal(true) },
-    { label:'IMC',         value:`${imc}`,           unit:'',  color:SS.cyan,   goal:'Normal ✓',     pct:100,        action: () => setShowMetricsModal(true) },
-    { label:'Grasa corp.', value:`${grasa}`,          unit:'%', color:SS.yellow, goal:'Meta: <15%',   pct: Math.round((15 / grasa) * 100), action: () => setShowMetricsModal(true) },
-    { label:'Músculo',     value:`${musculo}`,         unit:'%', color:SS.blue,   goal:'Meta: >45%',   pct: Math.round((musculo / 45) * 100), action: () => setShowMetricsModal(true) },
+    { label:'Peso actual', value:`${currentWeight}`, unit:'kg', color:SS.green,  goal:`Meta: ${weightGoal} kg`,  pct: weightPct, action: () => setShowWeightModal(true) },
+    { label:'IMC',         value:`${imc}`,           unit:'',  color:SS.cyan,   goal:imcStatus,                  pct: imcPct,    action: () => setShowMetricsModal(true) },
+    { label:'Grasa corp.', value:`${grasa}`,          unit:'%', color:SS.yellow, goal:'Meta: <15%',               pct: grasa > 0 ? Math.min(100, Math.round((15 / grasa) * 100)) : 0, action: () => setShowMetricsModal(true) },
+    { label:'Músculo',     value:`${musculo}`,         unit:'%', color:SS.blue,   goal:'Meta: >45%',               pct: Math.min(100, Math.round((musculo / 45) * 100)), action: () => setShowMetricsModal(true) },
   ];
 
   const handleWeightSave = () => {
@@ -199,7 +202,7 @@ export function Salud({ state, toggleFast, addWeight, setFastGoal, updateHealthM
             }}>
               {state.fastStartTime ? '⏹ Romper' : '▶ Iniciar'}
             </button>
-            <button onClick={() => setShowFastModal(true)} style={{
+            <button onClick={() => { setFastGoalInput(String(state.fastGoalHours)); setShowFastModal(true); }} style={{
               padding:'6px 12px', borderRadius:10, border:`1px solid rgba(255,255,255,0.1)`, cursor:'pointer',
               background:'transparent', color:SS.dimText, fontSize:10, fontWeight:500, fontFamily:"'DM Sans',sans-serif",
             }}>⚙ {fastGoal}h</button>
@@ -211,7 +214,20 @@ export function Salud({ state, toggleFast, addWeight, setFastGoal, updateHealthM
         </div>
 
         <div style={{ marginTop:16 }}>
-          <CardTitle>Historial de Ayunos — Este mes</CardTitle>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
+            <CardTitle>Historial de Ayunos — Este mes</CardTitle>
+            {state.fastLog.length > 0 && (() => {
+              const last28 = state.fastLog.slice(-28);
+              const completed = last28.filter(d => d.completed).length;
+              const avgPct = Math.round(last28.reduce((a, d) => a + d.pct, 0) / last28.length);
+              return (
+                <div style={{ display:'flex', gap:12, fontSize:10, color:SS.dimText }}>
+                  <span><b style={{ color:SS.orange }}>{completed}</b>/{last28.length} completos</span>
+                  <span>avg <b style={{ color:SS.orange }}>{avgPct}%</b></span>
+                </div>
+              );
+            })()}
+          </div>
           <div style={{ display:'flex', gap:4, flexWrap:'wrap' }}>
             {state.fastLog.slice(-28).map((d, i) => {
               const dayNum = new Date(d.date).getDate();
