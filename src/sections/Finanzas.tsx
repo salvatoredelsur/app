@@ -23,8 +23,7 @@ interface Props {
   deleteGoal: (id: number) => void;
 }
 
-const BALANCE_TREND = [38000,39500,40200,38800,41000,42500,41800,43200,44000,43500,44800,45230];
-const TREND_PCT = Math.round(((BALANCE_TREND[BALANCE_TREND.length-1] - BALANCE_TREND[0]) / BALANCE_TREND[0]) * 100);
+const FALLBACK_TREND = [38000,39500,40200,38800,41000,42500,41800,43200,44000,43500,44800,45230];
 
 const CAT_COLORS: Record<string, string> = {
   'Vivienda':      SS.blue,
@@ -65,6 +64,23 @@ export function Finanzas({ state, togglePayment, addTransaction, addGoalFunds, d
   const expense = state.transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
   const balance = income - expense;
   const savings = balance;
+
+  const { balanceTrend, trendPct, monthLabels } = (() => {
+    const monthly: Record<string, number> = {};
+    for (const t of state.transactions) {
+      const m = t.date.slice(0, 7);
+      monthly[m] = (monthly[m] ?? 0) + (t.type === 'income' ? t.amount : -t.amount);
+    }
+    const months = Object.keys(monthly).sort();
+    if (months.length < 2) {
+      const p = Math.round(((FALLBACK_TREND[FALLBACK_TREND.length-1] - FALLBACK_TREND[0]) / FALLBACK_TREND[0]) * 100);
+      return { balanceTrend: FALLBACK_TREND, trendPct: p, monthLabels: ['Ene','Feb','Mar','Abr'] };
+    }
+    const vals = months.map(m => Math.max(0, monthly[m]));
+    const p = vals[0] > 0 ? Math.round(((vals[vals.length-1] - vals[0]) / vals[0]) * 100) : 0;
+    const labels = months.map(m => { const d = new Date(m + '-01'); return d.toLocaleDateString('es-MX', { month: 'short' }).replace('.','').slice(0,3); });
+    return { balanceTrend: vals, trendPct: p, monthLabels: labels };
+  })();
 
   const gastosCat = (() => {
     const bycat: Record<string, number> = {};
@@ -150,11 +166,11 @@ export function Finanzas({ state, togglePayment, addTransaction, addGoalFunds, d
         <Card color={SS.green}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
             <CardTitle color={SS.green}>Tendencia de Balance</CardTitle>
-            <span style={{ fontSize:11, color: TREND_PCT >= 0 ? SS.green : SS.red, fontWeight:700 }}>{TREND_PCT >= 0 ? '+' : ''}{TREND_PCT}% {TREND_PCT >= 0 ? '↑' : '↓'}</span>
+            <span style={{ fontSize:11, color: trendPct >= 0 ? SS.green : SS.red, fontWeight:700 }}>{trendPct >= 0 ? '+' : ''}{trendPct}% {trendPct >= 0 ? '↑' : '↓'}</span>
           </div>
-          <Sparkline data={BALANCE_TREND} color={SS.green} width={400} height={60} fluid/>
+          <Sparkline data={balanceTrend} color={SS.green} width={400} height={60} fluid/>
           <div style={{ display:'flex', justifyContent:'space-between', marginTop:4 }}>
-            {['Ene','Feb','Mar','Abr'].map(m => <span key={m} style={{ fontSize:8, color:SS.mutedText }}>{m}</span>)}
+            {monthLabels.map((m, i) => <span key={i} style={{ fontSize:8, color:SS.mutedText }}>{m}</span>)}
           </div>
         </Card>
 

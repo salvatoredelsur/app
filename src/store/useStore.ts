@@ -127,15 +127,33 @@ const defaultState: AppState = {
   })(),
   pomodoroCount: 7,
   notes: {},
-  transactions: [
-    { id:1, date: today(), amount: 28000, category: 'Salario',      description: 'Salario mensual', type: 'income' },
-    { id:2, date: today(), amount: 8500,  category: 'Vivienda',     description: 'Renta',           type: 'expense' },
-    { id:3, date: today(), amount: 3000,  category: 'Alimentación', description: 'Supermercado',    type: 'expense' },
-    { id:4, date: today(), amount: 2000,  category: 'Transporte',   description: 'Gasolina',        type: 'expense' },
-    { id:5, date: today(), amount: 1760,  category: 'Suscripciones',description: 'Netflix, Spotify, Claude', type: 'expense' },
-    { id:6, date: today(), amount: 1800,  category: 'Salud',        description: 'Seguro médico',   type: 'expense' },
-    { id:7, date: today(), amount: 1440,  category: 'Otros',        description: 'Varios',          type: 'expense' },
-  ],
+  transactions: (() => {
+    const mo = (monthsAgo: number, day = 15) => {
+      const d = new Date(); d.setDate(day); d.setMonth(d.getMonth() - monthsAgo);
+      return d.toISOString().slice(0, 10);
+    };
+    return [
+      // Current month
+      { id:1,  date: today(),    amount: 28000, category:'Salario',      description:'Salario mensual',          type:'income'  as const },
+      { id:2,  date: today(),    amount: 8500,  category:'Vivienda',     description:'Renta',                    type:'expense' as const },
+      { id:3,  date: today(),    amount: 3000,  category:'Alimentación', description:'Supermercado',             type:'expense' as const },
+      { id:4,  date: today(),    amount: 2000,  category:'Transporte',   description:'Gasolina',                 type:'expense' as const },
+      { id:5,  date: today(),    amount: 1760,  category:'Suscripciones',description:'Netflix, Spotify, Claude', type:'expense' as const },
+      { id:6,  date: today(),    amount: 1800,  category:'Salud',        description:'Seguro médico',            type:'expense' as const },
+      { id:7,  date: today(),    amount: 1440,  category:'Otros',        description:'Varios',                   type:'expense' as const },
+      // 5 months of history (income + grouped expenses)
+      { id:8,  date: mo(1), amount: 28000, category:'Salario', description:'Salario mensual', type:'income'  as const },
+      { id:9,  date: mo(1), amount: 18500, category:'Gastos',  description:'Gastos mensuales', type:'expense' as const },
+      { id:10, date: mo(2), amount: 28000, category:'Salario', description:'Salario mensual', type:'income'  as const },
+      { id:11, date: mo(2), amount: 17200, category:'Gastos',  description:'Gastos mensuales', type:'expense' as const },
+      { id:12, date: mo(3), amount: 28000, category:'Salario', description:'Salario mensual', type:'income'  as const },
+      { id:13, date: mo(3), amount: 19800, category:'Gastos',  description:'Gastos mensuales', type:'expense' as const },
+      { id:14, date: mo(4), amount: 26500, category:'Salario', description:'Salario mensual', type:'income'  as const },
+      { id:15, date: mo(4), amount: 16900, category:'Gastos',  description:'Gastos mensuales', type:'expense' as const },
+      { id:16, date: mo(5), amount: 26000, category:'Salario', description:'Salario mensual', type:'income'  as const },
+      { id:17, date: mo(5), amount: 15800, category:'Gastos',  description:'Gastos mensuales', type:'expense' as const },
+    ];
+  })(),
   payments: [
     { id:1, name:'Renta',              amount:8500,  dueDate:'30 Abr', category:'Vivienda',      paid:false, icon:'🏠', urgent:true },
     { id:2, name:'Netflix + Spotify',  amount:340,   dueDate:'2 May',  category:'Suscripciones', paid:false, icon:'📱' },
