@@ -346,6 +346,10 @@ export function useStore() {
     setState(s => ({ ...s, payments: s.payments.filter(p => p.id !== id) }));
   }, []);
 
+  const clearPaidPayments = useCallback(() => {
+    setState(s => ({ ...s, payments: s.payments.filter(p => !p.paid) }));
+  }, []);
+
   const addGoal = useCallback((g: Omit<Goal, 'id'>) => {
     setState(s => ({ ...s, goals: [...s.goals, { ...g, id: Date.now() }] }));
   }, []);
@@ -383,7 +387,7 @@ export function useStore() {
   return {
     state, update,
     toggleHabit, markAllHabits, addHabit, updateHabit, deleteHabit,
-    togglePayment, addPayment, deletePayment,
+    togglePayment, addPayment, deletePayment, clearPaidPayments,
     addWeight,
     toggleFast, setFastGoal,
     addTransaction, deleteTransaction,

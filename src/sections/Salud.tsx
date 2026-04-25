@@ -168,13 +168,23 @@ export function Salud({ state, toggleFast, addWeight, setFastGoal, updateHealthM
             <div style={{ fontSize:20, fontWeight:800, color:'white', marginBottom:4 }}>
               {state.fastStartTime ? `${fFloor}h ${fMin}min transcurridos` : 'Inicia tu ayuno'}
             </div>
-            {state.fastStartTime && (
-              <div style={{ fontSize:11, color:SS.dimText, marginBottom:12 }}>
-                Inicio: {new Date(state.fastStartTime).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})}
-                {' · '}
-                Meta: {new Date(new Date(state.fastStartTime).getTime() + fastGoal * 3600000).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})}
-              </div>
-            )}
+            {state.fastStartTime && (() => {
+              const startMs  = new Date(state.fastStartTime).getTime();
+              const fastEnd  = new Date(startMs + fastGoal * 3600000);
+              const eatEnd   = new Date(startMs + 24 * 3600000);
+              const fmt = (d: Date) => d.toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit' });
+              return (
+                <div style={{ fontSize:11, color:SS.dimText, marginBottom:12, lineHeight:1.7 }}>
+                  <span>Inicio: <b style={{ color:'rgba(255,255,255,0.6)' }}>{fmt(new Date(startMs))}</b></span>
+                  {' · '}
+                  <span>Meta: <b style={{ color: fastPct >= 100 ? SS.green : SS.orange }}>{fmt(fastEnd)}</b></span>
+                  {' · '}
+                  <span style={{ color: fastPct >= 100 ? SS.green : SS.dimText }}>
+                    Comer hasta: <b style={{ color:'rgba(255,255,255,0.5)' }}>{fmt(eatEnd)}</b>
+                  </span>
+                </div>
+              );
+            })()}
             <Bar pct={Math.min(fastPct, 100)} color={SS.orange} height={6}/>
             {fastPct >= 100 && (
               <div style={{ fontSize:11, color:SS.green, marginTop:6, fontWeight:600 }}>✓ ¡Ayuno completado!</div>

@@ -34,7 +34,7 @@ export default function App() {
       case 'habitos':
         return <Habitos state={state} toggleHabit={store.toggleHabit} markAllHabits={store.markAllHabits} addHabit={store.addHabit} updateHabit={store.updateHabit} deleteHabit={store.deleteHabit}/>;
       case 'finanzas':
-        return <Finanzas state={state} togglePayment={store.togglePayment} addTransaction={store.addTransaction} addGoalFunds={store.addGoalFunds} deleteTransaction={store.deleteTransaction} addPayment={store.addPayment} deletePayment={store.deletePayment} addGoal={store.addGoal} deleteGoal={store.deleteGoal}/>;
+        return <Finanzas state={state} togglePayment={store.togglePayment} addTransaction={store.addTransaction} addGoalFunds={store.addGoalFunds} deleteTransaction={store.deleteTransaction} addPayment={store.addPayment} deletePayment={store.deletePayment} clearPaidPayments={store.clearPaidPayments} addGoal={store.addGoal} deleteGoal={store.deleteGoal}/>;
       default:
         return <Dashboard state={state} setSection={setSection} toggleHabit={store.toggleHabit} setNote={store.setNote}/>;
     }

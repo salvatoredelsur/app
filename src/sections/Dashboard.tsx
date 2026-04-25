@@ -56,9 +56,15 @@ export function Dashboard({ state, setSection, toggleHabit, setNote }: Props) {
   const fastElapsedH = state.fastStartTime
     ? (Date.now() - new Date(state.fastStartTime).getTime()) / 3600000
     : 0;
+  const fastDone = state.fastStartTime && fastElapsedH >= state.fastGoalHours;
   const fastDisplay = state.fastStartTime
     ? `${Math.floor(fastElapsedH)}h ${Math.round((fastElapsedH % 1) * 60)}m`
     : 'Sin ayuno';
+  const fastSub = state.fastStartTime
+    ? (fastDone
+        ? `✓ Meta ${state.fastGoalHours}h alcanzada`
+        : `${state.fastGoalHours}:${24 - state.fastGoalHours} · En curso`)
+    : 'Sin ayuno activo';
 
   const currentWeight = state.weightLog.length > 0 ? state.weightLog[state.weightLog.length - 1].kg : 78.5;
   const startWeight   = state.weightLog.length > 1 ? state.weightLog[0].kg : currentWeight;
@@ -85,9 +91,9 @@ export function Dashboard({ state, setSection, toggleHabit, setNote }: Props) {
       {/* Stat cards: auto-fill handles both mobile and desktop */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))', gap:12, marginBottom:20 }}>
         <StatCard label="Peso actual" value={`${currentWeight} kg`} sub={`Meta: 75 kg · ${weightDiff >= 0 ? '+' : ''}${weightDiff} kg`} color={SS.green} icon="⚖️" sparkData={weightTrend} onClick={() => setSection('salud')}/>
-        <StatCard label="Ayuno hoy" value={fastDisplay} sub={state.fastStartTime ? `${state.fastGoalHours}:${24 - state.fastGoalHours} · En curso` : 'Sin ayuno activo'} color={SS.orange} icon="⏱️" onClick={() => setSection('salud')}/>
+        <StatCard label="Ayuno hoy" value={fastDisplay} sub={fastSub} color={fastDone ? SS.green : SS.orange} icon="⏱️" onClick={() => setSection('salud')}/>
         <StatCard label="Balance" value={`$${totalBalance.toLocaleString()}`} sub={`Ahorro: ${savingsPct}% · $${Math.max(savings,0).toLocaleString()}`} color={SS.yellow} icon="💰" sparkData={balanceTrend} onClick={() => setSection('finanzas')}/>
-        <StatCard label="Hábitos" value={`${habitPct}%`} sub={`${completedToday}/${totalHabits} completados hoy`} color={SS.purple} icon="🔥" onClick={() => setSection('habitos')}/>
+        <StatCard label="Hábitos" value={`${habitPct}%`} sub={habitPct === 100 ? '¡Todos completados hoy! 🎉' : `${completedToday}/${totalHabits} completados hoy`} color={habitPct === 100 ? SS.green : SS.purple} icon="🔥" onClick={() => setSection('habitos')}/>
       </div>
 
       <div style={{ display:'grid', gridTemplateColumns: mobile ? '1fr' : '1fr 1fr', gap:12, marginBottom:20 }}>

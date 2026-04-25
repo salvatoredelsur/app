@@ -18,6 +18,7 @@ interface Props {
   deleteTransaction: (id: number) => void;
   addPayment: (p: Omit<Payment, 'id'>) => void;
   deletePayment: (id: number) => void;
+  clearPaidPayments: () => void;
   addGoal: (g: Omit<Goal, 'id'>) => void;
   deleteGoal: (id: number) => void;
 }
@@ -47,7 +48,7 @@ function catColor(cat: string) {
 
 type ModalType = 'tx' | 'payment' | 'goal' | 'goalfunds' | null;
 
-export function Finanzas({ state, togglePayment, addTransaction, addGoalFunds, deleteTransaction, addPayment, deletePayment, addGoal, deleteGoal }: Props) {
+export function Finanzas({ state, togglePayment, addTransaction, addGoalFunds, deleteTransaction, addPayment, deletePayment, clearPaidPayments, addGoal, deleteGoal }: Props) {
   const mobile = useIsMobile();
   const [modal, setModal]   = useState<ModalType>(null);
   const [goalFundsId, setGoalFundsId] = useState<number | null>(null);
@@ -210,9 +211,14 @@ export function Finanzas({ state, togglePayment, addTransaction, addGoalFunds, d
 
       <Card color={SS.red} style={{ marginBottom:14 }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
-          <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
             <CardTitle color={SS.red}>Pagos Pendientes</CardTitle>
             <button onClick={() => setModal('payment')} style={{ fontSize:10, color:SS.red, background:`${SS.red}15`, border:`1px solid ${SS.red}40`, borderRadius:8, padding:'3px 10px', cursor:'pointer', fontFamily:"'DM Sans',sans-serif", fontWeight:600 }}>+ Pago</button>
+            {state.payments.some(p => p.paid) && (
+              <button onClick={clearPaidPayments} style={{ fontSize:10, color:'rgba(255,255,255,0.35)', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:8, padding:'3px 10px', cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}
+                onMouseEnter={e => (e.currentTarget.style.color = SS.red)}
+                onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.35)')}>Limpiar pagados</button>
+            )}
           </div>
           <span style={{ fontSize:11, fontWeight:700, color:SS.red }}>Total: ${pendingTotal.toLocaleString()}</span>
         </div>
