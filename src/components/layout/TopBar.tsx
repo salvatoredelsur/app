@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import type { SectionId } from '../../store/useStore';
 
 const NAV_META: Record<SectionId, { label: string; icon: string; color: string }> = {
@@ -12,10 +13,36 @@ interface Props {
   section: SectionId;
   mobile: boolean;
   onToggleCollapse: () => void;
+  studyTimerStart?: string | null;
+  workTimerStart?: string | null;
+  studyTimerSubject?: string;
+  workTimerSubject?: string;
+  onGoToProductividad?: () => void;
 }
 
-export function TopBar({ section, mobile, onToggleCollapse }: Props) {
+function fmtSecs(secs: number) {
+  const h = Math.floor(secs / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  const s = secs % 60;
+  if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  return `${m}:${String(s).padStart(2,'0')}`;
+}
+
+export function TopBar({ section, mobile, onToggleCollapse, studyTimerStart, workTimerStart, studyTimerSubject, workTimerSubject, onGoToProductividad }: Props) {
   const nav = NAV_META[section];
+  const [tick, setTick] = useState(0);
+
+  const anyTimer = studyTimerStart || workTimerStart;
+  useEffect(() => {
+    if (!anyTimer) return;
+    const id = setInterval(() => setTick(t => t + 1), 1000);
+    return () => clearInterval(id);
+  }, [anyTimer]);
+
+  const studySecs = studyTimerStart ? Math.floor((Date.now() - new Date(studyTimerStart).getTime()) / 1000) : 0;
+  const workSecs  = workTimerStart  ? Math.floor((Date.now() - new Date(workTimerStart).getTime())  / 1000) : 0;
+  void tick; // triggers re-render
+
   return (
     <div style={{
       height:52, flexShrink:0,
@@ -43,7 +70,21 @@ export function TopBar({ section, mobile, onToggleCollapse }: Props) {
 
       <div style={{ flex:1 }}/>
 
-      <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+      <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+        {/* Live timer pill when a timer is running */}
+        {studyTimerStart && (
+          <button onClick={onGoToProductividad} style={{ display:'flex', alignItems:'center', gap:6, padding:'4px 10px', borderRadius:20, border:'1px solid #ffe04050', background:'#ffe04012', cursor: onGoToProductividad ? 'pointer' : 'default', fontSize:10, color:'#ffe040', fontFamily:"'DM Sans',sans-serif", fontWeight:600, whiteSpace:'nowrap' }}>
+            <div style={{ width:6, height:6, borderRadius:'50%', background:'#ffe040', boxShadow:'0 0 6px #ffe040', animation:'pulse-dot 1.5s ease-in-out infinite' }}/>
+            {studyTimerSubject ? `${studyTimerSubject} · ` : '📚 '}{fmtSecs(studySecs)}
+          </button>
+        )}
+        {workTimerStart && (
+          <button onClick={onGoToProductividad} style={{ display:'flex', alignItems:'center', gap:6, padding:'4px 10px', borderRadius:20, border:'1px solid #00aaff50', background:'#00aaff12', cursor: onGoToProductividad ? 'pointer' : 'default', fontSize:10, color:'#00aaff', fontFamily:"'DM Sans',sans-serif", fontWeight:600, whiteSpace:'nowrap' }}>
+            <div style={{ width:6, height:6, borderRadius:'50%', background:'#00aaff', boxShadow:'0 0 6px #00aaff', animation:'pulse-dot 1.5s ease-in-out infinite' }}/>
+            {workTimerSubject ? `${workTimerSubject} · ` : '💼 '}{fmtSecs(workSecs)}
+          </button>
+        )}
+
         {!mobile && (
           <div style={{ fontSize:11, color:'rgba(255,255,255,0.3)', letterSpacing:.3 }}>
             {new Date().toLocaleDateString('es-MX', { weekday:'short', day:'numeric', month:'long', year:'numeric' }).replace(/^\w/, c => c.toUpperCase())}

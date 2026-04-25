@@ -57,6 +57,11 @@ export default function App() {
           section={state.section}
           mobile={mobile}
           onToggleCollapse={() => update('sidebarCollapsed', !state.sidebarCollapsed)}
+          studyTimerStart={state.studyTimerStart}
+          workTimerStart={state.workTimerStart}
+          studyTimerSubject={state.studyTimerSubject}
+          workTimerSubject={state.workTimerSubject}
+          onGoToProductividad={() => setSection('productividad')}
         />
 
         <div style={{
