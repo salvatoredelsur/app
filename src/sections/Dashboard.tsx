@@ -43,7 +43,7 @@ export function Dashboard({ state, setSection, toggleHabit, setNote }: Props) {
       const m = t.date.slice(0, 7);
       monthly[m] = (monthly[m] ?? 0) + (t.type === 'income' ? t.amount : -t.amount);
     }
-    const vals = Object.keys(monthly).sort().map(m => Math.max(0, monthly[m]));
+    const vals = Object.keys(monthly).sort().map(m => monthly[m]);
     return vals.length >= 2 ? vals : [38000,39500,40200,38800,41000,42500,41800,43200,44000,43500,44800,45230];
   })();
   const completedToday = state.habitCompletions.filter(c => c.date === TODAY_STR).length;
@@ -94,7 +94,11 @@ export function Dashboard({ state, setSection, toggleHabit, setNote }: Props) {
   const savings       = monthIncome - monthExpense;
   const savingsPct    = monthIncome > 0 ? Math.round((Math.max(savings, 0) / monthIncome) * 100) : 0;
   const topProjects   = state.projects.slice(0, 3);
-  const todayHabits   = state.habits.slice(0, 5).map(h => ({
+  const todayHabits   = [...state.habits].sort((a, b) => {
+    const aDone = state.habitCompletions.some(c => c.habitId === a.id && c.date === TODAY_STR);
+    const bDone = state.habitCompletions.some(c => c.habitId === b.id && c.date === TODAY_STR);
+    return aDone === bDone ? 0 : aDone ? 1 : -1;
+  }).slice(0, 5).map(h => ({
     ...h,
     done: state.habitCompletions.some(c => c.habitId === h.id && c.date === TODAY_STR),
   }));

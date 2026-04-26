@@ -62,7 +62,10 @@ export function Salud({ state, toggleFast, addWeight, setFastGoal, setWeightGoal
 
   const fastStreak = (() => {
     let n = 0;
-    const sorted = [...state.fastLog].sort((a, b) => b.date.localeCompare(a.date));
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const sorted = [...state.fastLog]
+      .filter(e => e.completed || e.date !== todayStr)
+      .sort((a, b) => b.date.localeCompare(a.date));
     for (const e of sorted) { if (e.completed) n++; else break; }
     return n;
   })();
