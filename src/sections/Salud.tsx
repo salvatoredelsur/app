@@ -81,14 +81,15 @@ export function Salud({ state, toggleFast, addWeight, setFastGoal, setWeightGoal
 
   const handleWeightSave = () => {
     const v = parseFloat(weightInput);
-    if (!isNaN(v) && v > 30 && v < 300) {
-      addWeight(v);
-      const g = parseFloat(weightGoalInput);
-      if (!isNaN(g) && g > 30 && g < 300) setWeightGoal(g);
-      setShowWeightModal(false);
-      setWeightInput('');
-      setWeightGoalInput('');
-    }
+    const g = parseFloat(weightGoalInput);
+    const validWeight = !isNaN(v) && v > 30 && v < 300;
+    const validGoal   = !isNaN(g) && g > 30 && g < 300;
+    if (!validWeight && !validGoal) return;
+    if (validWeight) addWeight(v);
+    if (validGoal)   setWeightGoal(g);
+    setShowWeightModal(false);
+    setWeightInput('');
+    setWeightGoalInput('');
   };
 
   const handleMetricsSave = () => {

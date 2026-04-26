@@ -42,7 +42,7 @@ export default function App() {
       case 'salud':
         return <Salud state={state} toggleFast={store.toggleFast} addWeight={store.addWeight} setFastGoal={store.setFastGoal} setWeightGoal={store.setWeightGoal} updateHealthMetrics={store.updateHealthMetrics}/>;
       case 'productividad':
-        return <Productividad state={state} addProject={store.addProject} updateProject={store.updateProject} deleteProject={store.deleteProject} toggleStudyTimer={store.toggleStudyTimer} toggleWorkTimer={store.toggleWorkTimer} addStudySession={store.addStudySession} addWorkSession={store.addWorkSession} incrementPomodoro={store.incrementPomodoro} resetPomodoro={store.resetPomodoro}/>;
+        return <Productividad state={state} addProject={store.addProject} updateProject={store.updateProject} deleteProject={store.deleteProject} toggleStudyTimer={store.toggleStudyTimer} toggleWorkTimer={store.toggleWorkTimer} addStudySession={store.addStudySession} addWorkSession={store.addWorkSession} incrementPomodoro={store.incrementPomodoro} resetPomodoro={store.resetPomodoro} togglePomodoro={store.togglePomodoro} advancePomodoro={store.advancePomodoro}/>;
       case 'habitos':
         return <Habitos state={state} toggleHabit={store.toggleHabit} markAllHabits={store.markAllHabits} addHabit={store.addHabit} updateHabit={store.updateHabit} deleteHabit={store.deleteHabit}/>;
       case 'finanzas':

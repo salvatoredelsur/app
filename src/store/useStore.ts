@@ -32,6 +32,8 @@ export interface AppState {
   workTimerStart: string | null;
   workTimerSubject: string;
   pomodoroCount: number;
+  pomodoroTimerStart: string | null;
+  pomodoroPhase: 'work' | 'break';
   notes: Record<string, string>;
   transactions: Transaction[];
   payments: Payment[];
@@ -128,6 +130,8 @@ const defaultState: AppState = {
     ];
   })(),
   pomodoroCount: 7,
+  pomodoroTimerStart: null,
+  pomodoroPhase: 'work' as const,
   notes: {},
   transactions: (() => {
     const mo = (monthsAgo: number, day = 15) => {
@@ -332,7 +336,23 @@ export function useStore() {
   }, []);
 
   const resetPomodoro = useCallback(() => {
-    setState(s => ({ ...s, pomodoroCount: 0 }));
+    setState(s => ({ ...s, pomodoroCount: 0, pomodoroTimerStart: null, pomodoroPhase: 'work' as const }));
+  }, []);
+
+  const togglePomodoro = useCallback(() => {
+    setState(s => {
+      if (s.pomodoroTimerStart) return { ...s, pomodoroTimerStart: null };
+      return { ...s, pomodoroTimerStart: new Date().toISOString(), pomodoroPhase: 'work' as const };
+    });
+  }, []);
+
+  const advancePomodoro = useCallback((completedPhase: 'work' | 'break') => {
+    setState(s => {
+      if (completedPhase === 'work') {
+        return { ...s, pomodoroCount: s.pomodoroCount + 1, pomodoroTimerStart: new Date().toISOString(), pomodoroPhase: 'break' as const };
+      }
+      return { ...s, pomodoroTimerStart: null, pomodoroPhase: 'work' as const };
+    });
   }, []);
 
   const updateProject = useCallback((id: number, patch: Partial<Omit<Project, 'id'>>) => {
@@ -418,7 +438,8 @@ export function useStore() {
     addGoalFunds, addGoal, deleteGoal,
     addProject, updateProject, deleteProject,
     setNote,
-    toggleStudyTimer, toggleWorkTimer, addStudySession, addWorkSession, incrementPomodoro, resetPomodoro,
+    toggleStudyTimer, toggleWorkTimer, addStudySession, addWorkSession,
+    incrementPomodoro, resetPomodoro, togglePomodoro, advancePomodoro,
     updateHealthMetrics,
     exportData, importData,
   };

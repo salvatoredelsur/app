@@ -21,6 +21,8 @@ interface Props {
   addWorkSession: (project: string, durationMin: number) => void;
   incrementPomodoro: () => void;
   resetPomodoro: () => void;
+  togglePomodoro: () => void;
+  advancePomodoro: (phase: 'work' | 'break') => void;
 }
 
 
@@ -44,7 +46,10 @@ function getDateStr(daysAgo: number) {
   return d.toISOString().slice(0, 10);
 }
 
-export function Productividad({ state, addProject, updateProject, deleteProject, toggleStudyTimer, toggleWorkTimer, addStudySession, addWorkSession, incrementPomodoro, resetPomodoro }: Props) {
+const POMODORO_WORK_MIN  = 25;
+const POMODORO_BREAK_MIN = 5;
+
+export function Productividad({ state, addProject, updateProject, deleteProject, toggleStudyTimer, toggleWorkTimer, addStudySession, addWorkSession, incrementPomodoro, resetPomodoro, togglePomodoro, advancePomodoro }: Props) {
   const mobile = useIsMobile();
   const [showModal, setShowModal] = useState(false);
   const [showSessionModal, setShowSessionModal] = useState(false);
@@ -56,6 +61,7 @@ export function Productividad({ state, addProject, updateProject, deleteProject,
   const [workElapsed, setWorkElapsed] = useState(0);
   const [studyInput, setStudyInput] = useState('');
   const [workInput, setWorkInput] = useState('');
+  const [pomodoroSecs, setPomodoroSecs] = useState(0);
   useEscapeKey(() => { setShowModal(false); setEditingProject(null); setShowSessionModal(false); }, showModal || !!editingProject || showSessionModal);
 
   useEffect(() => {
@@ -73,6 +79,23 @@ export function Productividad({ state, addProject, updateProject, deleteProject,
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
   }, [state.workTimerStart]);
+
+  useEffect(() => {
+    if (!state.pomodoroTimerStart) { setPomodoroSecs(0); return; }
+    const goalSecs = (state.pomodoroPhase === 'work' ? POMODORO_WORK_MIN : POMODORO_BREAK_MIN) * 60;
+    const tick = () => {
+      const elapsed = Math.floor((Date.now() - new Date(state.pomodoroTimerStart!).getTime()) / 1000);
+      const remaining = goalSecs - elapsed;
+      if (remaining <= 0) {
+        advancePomodoro(state.pomodoroPhase);
+      } else {
+        setPomodoroSecs(remaining);
+      }
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [state.pomodoroTimerStart, state.pomodoroPhase, advancePomodoro]);
 
   const TODAY = getDateStr(0);
   const studyMin = state.studySessions.filter(s => s.date === TODAY).reduce((a, b) => a + b.durationMin, 0)
@@ -219,15 +242,32 @@ export function Productividad({ state, addProject, updateProject, deleteProject,
 
         <Card color={SS.cyan} style={{ display:'flex', alignItems:'center', gap:14 }}>
           <div style={{ flex:1 }}>
-            <CardTitle color={SS.cyan}>Pomodoros Hoy</CardTitle>
-            <div style={{ fontSize:28, fontWeight:900, color:SS.cyan, textShadow:`0 0 18px ${SS.cyan}80` }}>
-              {state.pomodoroCount}<span style={{ fontSize:13, fontWeight:500, color:SS.dimText }}>/10</span>
+            <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+              <CardTitle color={SS.cyan}>Pomodoros Hoy</CardTitle>
+              {state.pomodoroTimerStart && <div style={{ width:7, height:7, borderRadius:'50%', background: state.pomodoroPhase === 'work' ? SS.red : SS.green, boxShadow:`0 0 6px ${state.pomodoroPhase === 'work' ? SS.red : SS.green}`, animation:'pulse-dot 1.5s ease-in-out infinite', flexShrink:0 }}/>}
             </div>
+            {state.pomodoroTimerStart ? (
+              <>
+                <div style={{ fontSize:22, fontWeight:800, color:'white', fontVariantNumeric:'tabular-nums' }}>
+                  {String(Math.floor(pomodoroSecs / 60)).padStart(2,'0')}:{String(pomodoroSecs % 60).padStart(2,'0')}
+                </div>
+                <div style={{ fontSize:9, color: state.pomodoroPhase === 'work' ? SS.red : SS.green, marginTop:1, fontWeight:600 }}>
+                  {state.pomodoroPhase === 'work' ? `🍅 Trabajo · ${POMODORO_WORK_MIN}min` : `☕ Descanso · ${POMODORO_BREAK_MIN}min`}
+                </div>
+              </>
+            ) : (
+              <div style={{ fontSize:28, fontWeight:900, color:SS.cyan, textShadow:`0 0 18px ${SS.cyan}80` }}>
+                {state.pomodoroCount}<span style={{ fontSize:13, fontWeight:500, color:SS.dimText }}>/10</span>
+              </div>
+            )}
           </div>
           <div style={{ display:'flex', flexDirection:'column', gap:6, alignItems:'flex-end' }}>
-            <button onClick={incrementPomodoro} style={{ padding:'8px 14px', borderRadius:10, border:`1px solid ${SS.cyan}50`, background:`${SS.cyan}22`, color:SS.cyan, fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:"'DM Sans',sans-serif", whiteSpace:'nowrap' }}>
-              + 1 🍅
+            <button onClick={togglePomodoro} style={{ padding:'8px 14px', borderRadius:10, border:`1px solid ${state.pomodoroTimerStart ? SS.red : SS.cyan}50`, background: state.pomodoroTimerStart ? `${SS.red}22` : `${SS.cyan}22`, color: state.pomodoroTimerStart ? SS.red : SS.cyan, fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:"'DM Sans',sans-serif", whiteSpace:'nowrap' }}>
+              {state.pomodoroTimerStart ? '⏹ Stop' : '▶ Start'}
             </button>
+            {!state.pomodoroTimerStart && (
+              <button onClick={incrementPomodoro} style={{ padding:'4px 10px', borderRadius:8, border:`1px solid ${SS.cyan}30`, background:'transparent', color:SS.cyan, fontSize:10, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>+1 🍅</button>
+            )}
             <button onClick={resetPomodoro} style={{ padding:'3px 10px', borderRadius:8, border:'1px solid rgba(255,255,255,0.08)', background:'transparent', color:'rgba(255,255,255,0.25)', fontSize:9, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}
               onMouseEnter={e => (e.currentTarget.style.color = SS.red)}
               onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.25)')}>↺ reset</button>

@@ -55,7 +55,7 @@ export function Finanzas({ state, togglePayment, addTransaction, addGoalFunds, d
   const [txFilter, setTxFilter] = useState<'all' | 'income' | 'expense'>('all');
   useEscapeKey(() => { setModal(null); setGoalFundsId(null); }, modal !== null);
 
-  const [txForm, setTxForm] = useState({ amount:'', category:'', description:'', type:'expense' as 'income'|'expense' });
+  const [txForm, setTxForm] = useState({ amount:'', category:'', description:'', date:'', type:'expense' as 'income'|'expense' });
   const [goalAmount, setGoalAmount]   = useState('');
   const [payForm, setPayForm] = useState({ name:'', amount:'', dueDate:'', category:'', icon:'🏠', urgent: false });
   const [goalForm, setGoalForm] = useState<{ name:string; current:string; target:string; icon:string; color:string }>({ name:'', current:'', target:'', icon:'🎯', color: SS.green });
@@ -104,9 +104,10 @@ export function Finanzas({ state, togglePayment, addTransaction, addGoalFunds, d
   const handleAddTx = () => {
     const amt = parseFloat(txForm.amount);
     if (!isNaN(amt) && amt > 0) {
-      addTransaction({ date: new Date().toISOString().slice(0,10), amount: amt, category: txForm.category || 'Otros', description: txForm.description, type: txForm.type });
+      const date = txForm.date || new Date().toISOString().slice(0,10);
+      addTransaction({ date, amount: amt, category: txForm.category || 'Otros', description: txForm.description, type: txForm.type });
       setModal(null);
-      setTxForm({ amount:'', category:'', description:'', type:'expense' });
+      setTxForm({ amount:'', category:'', description:'', date:'', type:'expense' });
     }
   };
 
@@ -336,7 +337,12 @@ export function Finanzas({ state, togglePayment, addTransaction, addGoalFunds, d
           <div style={{ marginBottom:8 }}>
             <label style={{ fontSize:11, color:SS.dimText, display:'block', marginBottom:4 }}>Descripción</label>
             <input type="text" value={txForm.description} onChange={e => setTxForm(prev => ({ ...prev, description: e.target.value }))}
-              placeholder="Supermercado…" onKeyDown={e => e.key === 'Enter' && handleAddTx()} style={inputStyle(SS.green)}/>
+              placeholder="Supermercado…" style={inputStyle(SS.green)}/>
+          </div>
+          <div style={{ marginBottom:8 }}>
+            <label style={{ fontSize:11, color:SS.dimText, display:'block', marginBottom:4 }}>Fecha (vacío = hoy)</label>
+            <input type="date" value={txForm.date} onChange={e => setTxForm(prev => ({ ...prev, date: e.target.value }))}
+              onKeyDown={e => e.key === 'Enter' && handleAddTx()} style={{ ...inputStyle(SS.green), colorScheme:'dark' }}/>
           </div>
           <button onClick={handleAddTx} style={{ marginTop:4, width:'100%', padding:'10px', background:SS.green, color:SS.bg, border:'none', borderRadius:10, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>Registrar</button>
         </Modal>
