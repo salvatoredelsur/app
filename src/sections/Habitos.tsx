@@ -42,7 +42,14 @@ export function Habitos({ state, toggleHabit, markAllHabits, addHabit, updateHab
 
   const { habits, habitCompletions } = state;
   const TODAY_STR = getDateStr(0);
-  const completedToday = habitCompletions.filter(c => c.date === TODAY_STR).length;
+
+  // Precompute lookup structures for O(1) access instead of O(n) scans per cell
+  const cKey = (hid: number, date: string) => `${hid}|${date}`;
+  const cSet = new Set(habitCompletions.map(c => cKey(c.habitId, c.date)));
+  const byDate = new Map<string, number>();
+  for (const c of habitCompletions) byDate.set(c.date, (byDate.get(c.date) ?? 0) + 1);
+
+  const completedToday = byDate.get(TODAY_STR) ?? 0;
   const allDoneToday = habits.length > 0 && completedToday === habits.length;
 
   const last25Dates = new Set(Array.from({ length: 25 }, (_, i) => getDateStr(24 - i)));
@@ -54,8 +61,7 @@ export function Habitos({ state, toggleHabit, markAllHabits, addHabit, updateHab
   const habitStreaks = habits.map(h => {
     let streak = 0;
     for (let i = 0; i < 60; i++) {
-      const date = getDateStr(i);
-      if (habitCompletions.some(c => c.habitId === h.id && c.date === date)) streak++;
+      if (cSet.has(cKey(h.id, getDateStr(i)))) streak++;
       else break;
     }
     return streak;
@@ -64,10 +70,9 @@ export function Habitos({ state, toggleHabit, markAllHabits, addHabit, updateHab
   const overallStreak = (() => {
     if (habits.length === 0) return 0;
     let streak = 0;
+    const half = Math.ceil(habits.length / 2);
     for (let i = 0; i < 60; i++) {
-      const date = getDateStr(i);
-      const done = habitCompletions.filter(c => c.date === date).length;
-      if (done >= Math.ceil(habits.length / 2)) streak++;
+      if ((byDate.get(getDateStr(i)) ?? 0) >= half) streak++;
       else break;
     }
     return streak;
@@ -80,7 +85,7 @@ export function Habitos({ state, toggleHabit, markAllHabits, addHabit, updateHab
 
   const daily = Array.from({ length: 30 }, (_, i) => {
     const date = getDateStr(29 - i);
-    const done = habitCompletions.filter(c => c.date === date).length;
+    const done = byDate.get(date) ?? 0;
     return habits.length > 0 ? Math.round((done / habits.length) * 100) : 0;
   });
 
@@ -94,13 +99,14 @@ export function Habitos({ state, toggleHabit, markAllHabits, addHabit, updateHab
 
   const weekVals = Array.from({ length: 7 }, (_, i) => {
     const date = getDateStr(6 - i);
-    const done = habitCompletions.filter(c => c.date === date).length;
+    const done = byDate.get(date) ?? 0;
     return habits.length > 0 ? Math.round((done / habits.length) * 100) : 0;
   });
 
   const TRACKING_DAYS = 25;
   const topHabits = habits.map((h, i) => {
-    const done = habitCompletions.filter(c => c.habitId === h.id && last25Dates.has(c.date)).length;
+    let done = 0;
+    for (const d of last25Dates) if (cSet.has(cKey(h.id, d))) done++;
     return { ...h, pct: Math.round((done / TRACKING_DAYS) * 100), streak: habitStreaks[i] ?? 0 };
   }).sort((a, b) => b.pct - a.pct);
 
@@ -155,7 +161,7 @@ export function Habitos({ state, toggleHabit, markAllHabits, addHabit, updateHab
         ) : (
           <div style={{ display:'grid', gridTemplateColumns:`repeat(auto-fill, minmax(${mobile ? 100 : 120}px, 1fr))`, gap:8 }}>
             {habits.map(h => {
-              const done = habitCompletions.some(c => c.habitId === h.id && c.date === TODAY_STR);
+              const done = cSet.has(cKey(h.id, TODAY_STR));
               return (
                 <div key={h.id} onClick={() => toggleHabit(h.id, TODAY_STR)} style={{
                   display:'flex', alignItems:'center', gap:8, padding:'8px 10px', borderRadius:10, cursor:'pointer',
@@ -248,7 +254,7 @@ export function Habitos({ state, toggleHabit, markAllHabits, addHabit, updateHab
                 {Array.from({ length: 25 }, (_, di) => {
                   const date = getDateStr(24 - di);
                   const isToday = di === 24;
-                  const done = habitCompletions.some(c => c.habitId === habit.id && c.date === date);
+                  const done = cSet.has(cKey(habit.id, date));
                   return (
                     <div key={di} onClick={() => toggleHabit(habit.id, date)} title={`${date}${isToday ? ' · HOY' : ''}`}
                       style={{ width:14, height:14, borderRadius:3, cursor:'pointer', background: done ? habit.color : 'rgba(255,255,255,0.04)', border:`1px solid ${isToday ? 'rgba(255,255,255,0.3)' : done ? habit.color + '50' : 'rgba(255,255,255,0.06)'}`, boxShadow: done ? `0 0 4px ${habit.color}80` : 'none', outline: isToday && !done ? '1px solid rgba(255,255,255,0.15)' : 'none', outlineOffset:1, transition:'background .1s' }}/>
