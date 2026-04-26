@@ -93,7 +93,7 @@ export function Dashboard({ state, setSection, toggleHabit, setNote }: Props) {
   const weightDiff    = +(currentWeight - startWeight).toFixed(1);
   const savings       = monthIncome - monthExpense;
   const savingsPct    = monthIncome > 0 ? Math.round((Math.max(savings, 0) / monthIncome) * 100) : 0;
-  const topProjects   = state.projects.slice(0, 3);
+  const topProjects   = [...state.projects].sort((a, b) => b.pct - a.pct).slice(0, 3);
   const todayHabits   = [...state.habits].sort((a, b) => {
     const aDone = state.habitCompletions.some(c => c.habitId === a.id && c.date === TODAY_STR);
     const bDone = state.habitCompletions.some(c => c.habitId === b.id && c.date === TODAY_STR);

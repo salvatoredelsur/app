@@ -270,7 +270,8 @@ export function Habitos({ state, toggleHabit, markAllHabits, addHabit, updateHab
               <span style={{ fontSize:10, fontWeight:800, color: i < 3 ? RANK_COLORS[i] : 'rgba(255,255,255,0.25)', width:16, flexShrink:0 }}>{i+1}</span>
               <div style={{ flex:1, minWidth:0 }}>
                 <div style={{ display:'flex', justifyContent:'space-between', marginBottom:2 }}>
-                  <span style={{ fontSize:10, color:'rgba(255,255,255,0.8)', fontWeight:500, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', maxWidth:80 }}>{h.name}</span>
+                  <span style={{ fontSize:10, color:'rgba(255,255,255,0.8)', fontWeight:500, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', maxWidth:60 }}>{h.name}</span>
+                  {h.streak > 0 && <span style={{ fontSize:8, color:h.color, fontWeight:700, flexShrink:0 }}>🔥{h.streak}</span>}
                   <span style={{ fontSize:10, color:h.color, fontWeight:700, flexShrink:0 }}>{h.pct}%</span>
                 </div>
                 <Bar pct={h.pct} color={h.color} height={3}/>

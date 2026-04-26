@@ -277,6 +277,25 @@ export function Productividad({ state, addProject, updateProject, deleteProject,
         </Card>
       </div>
 
+      {/* Today's sessions log */}
+      {(state.studySessions.some(s => s.date === TODAY) || state.workSessions.some(s => s.date === TODAY)) && (
+        <Card color={SS.purple} style={{ marginBottom:20 }}>
+          <CardTitle color={SS.purple}>Sesiones de Hoy</CardTitle>
+          <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
+            {[
+              ...state.studySessions.filter(s => s.date === TODAY).map(s => ({ label: s.subject, min: s.durationMin, color: SS.yellow })),
+              ...state.workSessions.filter(s => s.date === TODAY).map(s => ({ label: s.project, min: s.durationMin, color: SS.blue })),
+            ].sort((a, b) => b.min - a.min).map((s, i) => (
+              <div key={i} style={{ display:'flex', alignItems:'center', gap:8, padding:'5px 0', borderBottom:'1px solid rgba(255,255,255,0.04)' }}>
+                <div style={{ width:6, height:6, borderRadius:2, background:s.color, flexShrink:0 }}/>
+                <span style={{ fontSize:11, color:'rgba(255,255,255,0.7)', flex:1, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{s.label}</span>
+                <span style={{ fontSize:10, fontWeight:700, color:s.color, flexShrink:0 }}>{s.min >= 60 ? `${(s.min/60).toFixed(1)}h` : `${s.min}min`}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
       <div style={{ display:'grid', gridTemplateColumns: mobile ? '1fr' : '1fr 1fr', gap:14, marginBottom:20 }}>
         {/* Weekly chart from real data */}
         <Card color={SS.yellow}>
