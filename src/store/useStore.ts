@@ -11,7 +11,7 @@ export interface Transaction { id: number; date: string; amount: number; categor
 export interface Payment { id: number; name: string; amount: number; dueDate: string; category: string; paid: boolean; icon: string; urgent?: boolean; }
 export interface Goal { id: number; name: string; current: number; target: number; icon: string; color: string; }
 
-export interface HealthMetrics { imc: number; grasa: number; musculo: number; }
+export interface HealthMetrics { imc: number; grasa: number; musculo: number; alturaM: number; }
 
 export interface AppState {
   section: SectionId;
@@ -48,7 +48,7 @@ const defaultState: AppState = {
   fastStartTime: null,
   fastGoalHours: 16,
   weightGoalKg: 75,
-  healthMetrics: { imc: 23.4, grasa: 18.2, musculo: 42.1 },
+  healthMetrics: { imc: 23.4, grasa: 18.2, musculo: 42.1, alturaM: 1.75 },
   studyTimerStart: null,
   studyTimerSubject: '',
   workTimerStart: null,

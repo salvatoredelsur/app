@@ -31,8 +31,8 @@ export function Salud({ state, toggleFast, addWeight, setFastGoal, setWeightGoal
   const [weightGoalInput, setWeightGoalInput] = useState('');
   const [fastGoalInput, setFastGoalInput] = useState(String(state.fastGoalHours));
   const [metricsForm, setMetricsForm] = useState({
-    imc: String(state.healthMetrics.imc),
-    grasa: String(state.healthMetrics.grasa),
+    alturaM: String(state.healthMetrics.alturaM ?? 1.75),
+    grasa:   String(state.healthMetrics.grasa),
     musculo: String(state.healthMetrics.musculo),
   });
 
@@ -70,7 +70,8 @@ export function Salud({ state, toggleFast, addWeight, setFastGoal, setWeightGoal
     return n;
   })();
 
-  const { imc, grasa, musculo } = state.healthMetrics;
+  const { grasa, musculo, alturaM = 1.75 } = state.healthMetrics;
+  const imc = alturaM > 0 ? +(currentWeight / (alturaM * alturaM)).toFixed(1) : state.healthMetrics.imc;
 
   const imcStatus = imc < 18.5 ? 'Bajo peso' : imc < 25 ? 'Normal ✓' : imc < 30 ? 'Sobrepeso' : 'Obesidad';
   const imcPct = imc >= 18.5 && imc < 25 ? 100 : imc < 18.5 ? Math.round((imc / 18.5) * 90) : Math.max(0, Math.round(100 - (imc - 25) * 6));
@@ -96,8 +97,9 @@ export function Salud({ state, toggleFast, addWeight, setFastGoal, setWeightGoal
   };
 
   const handleMetricsSave = () => {
+    const h = parseFloat(metricsForm.alturaM);
     updateHealthMetrics({
-      imc:     parseFloat(metricsForm.imc)     || imc,
+      alturaM: !isNaN(h) && h > 0.5 && h < 2.5 ? h : alturaM,
       grasa:   parseFloat(metricsForm.grasa)   || grasa,
       musculo: parseFloat(metricsForm.musculo) || musculo,
     });
@@ -323,18 +325,31 @@ export function Salud({ state, toggleFast, addWeight, setFastGoal, setWeightGoal
       {showMetricsModal && (
         <Modal title="Editar Métricas" color={SS.cyan} onClose={() => setShowMetricsModal(false)}>
           {[
-            { label:'IMC', key:'imc' as const, placeholder:'23.4' },
-            { label:'Grasa corporal (%)', key:'grasa' as const, placeholder:'18.2' },
-            { label:'Músculo (%)', key:'musculo' as const, placeholder:'42.1' },
+            { label:'Altura (m)', key:'alturaM' as const, placeholder:'1.75', step:'0.01' },
+            { label:'Grasa corporal (%)', key:'grasa' as const, placeholder:'18.2', step:'0.1' },
+            { label:'Músculo (%)', key:'musculo' as const, placeholder:'42.1', step:'0.1' },
           ].map(f => (
             <div key={f.key} style={{ marginBottom:10 }}>
               <label style={labelStyle}>{f.label}</label>
-              <input type="number" step="0.1" value={metricsForm[f.key]}
+              <input type="number" step={f.step} value={metricsForm[f.key]}
                 onChange={e => setMetricsForm(p => ({ ...p, [f.key]: e.target.value }))}
                 onKeyDown={e => e.key === 'Enter' && handleMetricsSave()}
                 placeholder={f.placeholder} style={inputStyle(SS.cyan)}/>
             </div>
           ))}
+          {(() => {
+            const h = parseFloat(metricsForm.alturaM);
+            if (isNaN(h) || h <= 0) return null;
+            const calcImc = +(currentWeight / (h * h)).toFixed(1);
+            const status = calcImc < 18.5 ? 'Bajo peso' : calcImc < 25 ? 'Normal ✓' : calcImc < 30 ? 'Sobrepeso' : 'Obesidad';
+            return (
+              <div style={{ background:`${SS.cyan}12`, border:`1px solid ${SS.cyan}25`, borderRadius:8, padding:'8px 12px', marginBottom:12 }}>
+                <span style={{ fontSize:11, color:SS.dimText }}>IMC calculado: </span>
+                <span style={{ fontSize:13, color:SS.cyan, fontWeight:700 }}>{calcImc}</span>
+                <span style={{ fontSize:10, color:SS.dimText }}> · {status}</span>
+              </div>
+            );
+          })()}
           <Btn color={SS.cyan} onClick={handleMetricsSave}>Guardar</Btn>
         </Modal>
       )}
