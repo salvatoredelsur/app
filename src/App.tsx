@@ -40,7 +40,7 @@ export default function App() {
       case 'dashboard':
         return <Dashboard state={state} setSection={setSection} toggleHabit={store.toggleHabit} setNote={store.setNote}/>;
       case 'salud':
-        return <Salud state={state} toggleFast={store.toggleFast} addWeight={store.addWeight} setFastGoal={store.setFastGoal} updateHealthMetrics={store.updateHealthMetrics}/>;
+        return <Salud state={state} toggleFast={store.toggleFast} addWeight={store.addWeight} setFastGoal={store.setFastGoal} setWeightGoal={store.setWeightGoal} updateHealthMetrics={store.updateHealthMetrics}/>;
       case 'productividad':
         return <Productividad state={state} addProject={store.addProject} updateProject={store.updateProject} deleteProject={store.deleteProject} toggleStudyTimer={store.toggleStudyTimer} toggleWorkTimer={store.toggleWorkTimer} addStudySession={store.addStudySession} addWorkSession={store.addWorkSession} incrementPomodoro={store.incrementPomodoro} resetPomodoro={store.resetPomodoro}/>;
       case 'habitos':

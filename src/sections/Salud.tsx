@@ -16,10 +16,11 @@ interface Props {
   toggleFast: () => void;
   addWeight: (kg: number) => void;
   setFastGoal: (h: number) => void;
+  setWeightGoal: (kg: number) => void;
   updateHealthMetrics: (patch: Partial<HealthMetrics>) => void;
 }
 
-export function Salud({ state, toggleFast, addWeight, setFastGoal, updateHealthMetrics }: Props) {
+export function Salud({ state, toggleFast, addWeight, setFastGoal, setWeightGoal, updateHealthMetrics }: Props) {
   const mobile = useIsMobile();
   const [elapsed, setElapsed] = useState(0);
   const [showWeightModal, setShowWeightModal] = useState(false);
@@ -27,6 +28,7 @@ export function Salud({ state, toggleFast, addWeight, setFastGoal, updateHealthM
   const [showFastModal, setShowFastModal] = useState(false);
   useEscapeKey(() => { setShowWeightModal(false); setShowMetricsModal(false); setShowFastModal(false); }, showWeightModal || showMetricsModal || showFastModal);
   const [weightInput, setWeightInput] = useState('');
+  const [weightGoalInput, setWeightGoalInput] = useState('');
   const [fastGoalInput, setFastGoalInput] = useState(String(state.fastGoalHours));
   const [metricsForm, setMetricsForm] = useState({
     imc: String(state.healthMetrics.imc),
@@ -52,7 +54,7 @@ export function Salud({ state, toggleFast, addWeight, setFastGoal, updateHealthM
   const currentWeight = weightData.length > 0 ? weightData[weightData.length - 1] : 78.5;
   const startWeight   = weightData.length > 0 ? weightData[0] : 82.0;
   const weightDiff    = +(currentWeight - startWeight).toFixed(1);
-  const weightGoal    = 75;
+  const weightGoal    = state.weightGoalKg;
   const rawWeightPct  = (startWeight - weightGoal) !== 0
     ? ((startWeight - currentWeight) / (startWeight - weightGoal)) * 100
     : currentWeight <= weightGoal ? 100 : 0;
@@ -79,7 +81,14 @@ export function Salud({ state, toggleFast, addWeight, setFastGoal, updateHealthM
 
   const handleWeightSave = () => {
     const v = parseFloat(weightInput);
-    if (!isNaN(v) && v > 30 && v < 300) { addWeight(v); setShowWeightModal(false); setWeightInput(''); }
+    if (!isNaN(v) && v > 30 && v < 300) {
+      addWeight(v);
+      const g = parseFloat(weightGoalInput);
+      if (!isNaN(g) && g > 30 && g < 300) setWeightGoal(g);
+      setShowWeightModal(false);
+      setWeightInput('');
+      setWeightGoalInput('');
+    }
   };
 
   const handleMetricsSave = () => {
@@ -249,11 +258,16 @@ export function Salud({ state, toggleFast, addWeight, setFastGoal, updateHealthM
       {/* Modals */}
       {showWeightModal && (
         <Modal title="Registrar Peso" color={SS.green} onClose={() => setShowWeightModal(false)}>
-          <label style={labelStyle}>Peso (kg)</label>
+          <label style={labelStyle}>Peso actual (kg)</label>
           <input type="number" step="0.1" min="30" max="300" value={weightInput}
             onChange={e => setWeightInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleWeightSave()}
             placeholder={`${currentWeight}`} autoFocus style={inputStyle(SS.green)}/>
+          <label style={labelStyle}>Meta de peso (kg) — actual: {weightGoal} kg</label>
+          <input type="number" step="0.1" min="30" max="300" value={weightGoalInput}
+            onChange={e => setWeightGoalInput(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleWeightSave()}
+            placeholder={`${weightGoal}`} style={inputStyle(SS.green)}/>
           <Btn color={SS.green} onClick={handleWeightSave}>Guardar</Btn>
         </Modal>
       )}

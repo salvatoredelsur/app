@@ -18,6 +18,7 @@ export interface AppState {
   sidebarCollapsed: boolean;
   fastStartTime: string | null;
   fastGoalHours: number;
+  weightGoalKg: number;
   weightLog: WeightEntry[];
   fastLog: FastEntry[];
   healthMetrics: HealthMetrics;
@@ -44,6 +45,7 @@ const defaultState: AppState = {
   sidebarCollapsed: false,
   fastStartTime: null,
   fastGoalHours: 16,
+  weightGoalKg: 75,
   healthMetrics: { imc: 23.4, grasa: 18.2, musculo: 42.1 },
   studyTimerStart: null,
   studyTimerSubject: '',
@@ -384,6 +386,10 @@ export function useStore() {
     setState(s => ({ ...s, fastGoalHours: hours }));
   }, []);
 
+  const setWeightGoal = useCallback((kg: number) => {
+    setState(s => ({ ...s, weightGoalKg: kg }));
+  }, []);
+
   const exportData = useCallback(() => {
     const json = JSON.stringify(state, null, 2);
     const blob = new Blob([json], { type: 'application/json' });
@@ -407,7 +413,7 @@ export function useStore() {
     toggleHabit, markAllHabits, addHabit, updateHabit, deleteHabit,
     togglePayment, addPayment, deletePayment, clearPaidPayments,
     addWeight,
-    toggleFast, setFastGoal,
+    toggleFast, setFastGoal, setWeightGoal,
     addTransaction, deleteTransaction,
     addGoalFunds, addGoal, deleteGoal,
     addProject, updateProject, deleteProject,
