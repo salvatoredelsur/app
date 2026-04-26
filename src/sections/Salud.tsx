@@ -152,6 +152,30 @@ export function Salud({ state, toggleFast, addWeight, setFastGoal, setWeightGoal
               </div>
             ))}
           </div>
+          {state.weightLog.length > 0 && (
+            <div style={{ marginTop:14, borderTop:'1px solid rgba(255,255,255,0.06)', paddingTop:10 }}>
+              <div style={{ fontSize:9, color:SS.dimText, marginBottom:6, fontWeight:600, letterSpacing:.8, textTransform:'uppercase' }}>Últimas entradas</div>
+              <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
+                {state.weightLog.slice(-5).reverse().map((e, i, arr) => {
+                  const prev = arr[i + 1];
+                  const diff = prev ? +(e.kg - prev.kg).toFixed(1) : null;
+                  return (
+                    <div key={e.date} style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                      <span style={{ fontSize:9, color:SS.dimText }}>{e.date}</span>
+                      <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                        {diff !== null && (
+                          <span style={{ fontSize:9, color: diff < 0 ? SS.green : diff > 0 ? SS.red : SS.dimText }}>
+                            {diff > 0 ? '+' : ''}{diff} kg
+                          </span>
+                        )}
+                        <span style={{ fontSize:10, fontWeight:700, color: i === 0 ? SS.green : 'rgba(255,255,255,0.7)' }}>{e.kg} kg</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </Card>
 
         <Card color={SS.cyan} style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:10 }}>

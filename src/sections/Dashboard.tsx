@@ -68,9 +68,12 @@ export function Dashboard({ state, setSection, toggleHabit, setNote }: Props) {
     return state.workSessions.filter(s => s.date === ds).reduce((a, b) => a + b.durationMin, 0);
   }).reduce((a, b) => a + b, 0) / 60 + (state.workTimerStart ? Math.floor((Date.now() - new Date(state.workTimerStart).getTime()) / 60000) : 0) / 60).toFixed(1);
 
-  const income  = state.transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
-  const expense = state.transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
-  const totalBalance = income - expense;
+  const allIncome  = state.transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+  const allExpense = state.transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+  const totalBalance = allIncome - allExpense;
+  const CURR_MONTH = new Date().toISOString().slice(0, 7);
+  const monthIncome  = state.transactions.filter(t => t.type === 'income'  && t.date.startsWith(CURR_MONTH)).reduce((s, t) => s + t.amount, 0);
+  const monthExpense = state.transactions.filter(t => t.type === 'expense' && t.date.startsWith(CURR_MONTH)).reduce((s, t) => s + t.amount, 0);
 
   const fastElapsedH = state.fastStartTime
     ? (Date.now() - new Date(state.fastStartTime).getTime()) / 3600000
@@ -88,8 +91,8 @@ export function Dashboard({ state, setSection, toggleHabit, setNote }: Props) {
   const currentWeight = state.weightLog.length > 0 ? state.weightLog[state.weightLog.length - 1].kg : 78.5;
   const startWeight   = state.weightLog.length > 1 ? state.weightLog[0].kg : currentWeight;
   const weightDiff    = +(currentWeight - startWeight).toFixed(1);
-  const savings       = income - expense;
-  const savingsPct    = income > 0 ? Math.round((Math.max(savings, 0) / income) * 100) : 0;
+  const savings       = monthIncome - monthExpense;
+  const savingsPct    = monthIncome > 0 ? Math.round((Math.max(savings, 0) / monthIncome) * 100) : 0;
   const topProjects   = state.projects.slice(0, 3);
   const todayHabits   = state.habits.slice(0, 5).map(h => ({
     ...h,
@@ -111,7 +114,7 @@ export function Dashboard({ state, setSection, toggleHabit, setNote }: Props) {
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))', gap:12, marginBottom:20 }}>
         <StatCard label="Peso actual" value={`${currentWeight} kg`} sub={`Meta: ${state.weightGoalKg} kg · ${weightDiff >= 0 ? '+' : ''}${weightDiff} kg`} color={SS.green} icon="⚖️" sparkData={weightTrend} onClick={() => setSection('salud')}/>
         <StatCard label="Ayuno hoy" value={fastDisplay} sub={fastSub} color={fastDone ? SS.green : SS.orange} icon="⏱️" onClick={() => setSection('salud')}/>
-        <StatCard label="Balance" value={`$${totalBalance.toLocaleString()}`} sub={`Ahorro: ${savingsPct}% · $${Math.max(savings,0).toLocaleString()}`} color={SS.yellow} icon="💰" sparkData={balanceTrend} onClick={() => setSection('finanzas')}/>
+        <StatCard label="Balance" value={`$${totalBalance.toLocaleString()}`} sub={`Este mes: ahorro ${savingsPct}% · $${Math.max(savings,0).toLocaleString()}`} color={SS.yellow} icon="💰" sparkData={balanceTrend} onClick={() => setSection('finanzas')}/>
         <StatCard label="Hábitos" value={`${habitPct}%`} sub={habitPct === 100 ? '¡Todos completados hoy! 🎉' : `${completedToday}/${totalHabits} completados hoy`} color={habitPct === 100 ? SS.green : SS.purple} icon="🔥" onClick={() => setSection('habitos')}/>
       </div>
 
