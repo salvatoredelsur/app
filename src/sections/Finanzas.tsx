@@ -60,10 +60,15 @@ export function Finanzas({ state, togglePayment, addTransaction, addGoalFunds, d
   const [payForm, setPayForm] = useState({ name:'', amount:'', dueDate:'', category:'', icon:'🏠', urgent: false });
   const [goalForm, setGoalForm] = useState<{ name:string; current:string; target:string; icon:string; color:string }>({ name:'', current:'', target:'', icon:'🎯', color: SS.green });
 
-  const income  = state.transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
-  const expense = state.transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
-  const balance = income - expense;
-  const savings = balance;
+  const CURR_MONTH = new Date().toISOString().slice(0, 7);
+  const allIncome  = state.transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+  const allExpense = state.transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+  const balance = allIncome - allExpense;
+
+  const monthTx = state.transactions.filter(t => t.date.startsWith(CURR_MONTH));
+  const income  = monthTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+  const expense = monthTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+  const savings = income - expense;
 
   const { balanceTrend, trendPct, monthLabels } = (() => {
     const monthly: Record<string, number> = {};
@@ -84,7 +89,7 @@ export function Finanzas({ state, togglePayment, addTransaction, addGoalFunds, d
 
   const gastosCat = (() => {
     const bycat: Record<string, number> = {};
-    for (const t of state.transactions.filter(t => t.type === 'expense')) {
+    for (const t of monthTx.filter(t => t.type === 'expense')) {
       bycat[t.category] = (bycat[t.category] ?? 0) + t.amount;
     }
     return Object.entries(bycat)
@@ -149,9 +154,9 @@ export function Finanzas({ state, togglePayment, addTransaction, addGoalFunds, d
 
       <div style={{ display:'grid', gridTemplateColumns: mobile ? '1fr 1fr' : 'repeat(4,1fr)', gap:10, marginBottom:20 }}>
         {[
-          { lb:'Balance Total',  val:`$${balance.toLocaleString()}`,  sub:balance >= 0 ? 'Saldo positivo' : 'Saldo negativo', c:balance >= 0 ? SS.green : SS.red },
-          { lb:'Ingresos/mes',   val:`$${income.toLocaleString()}`,   sub:'Salario + freelance',      c:SS.cyan   },
-          { lb:'Gastos/mes',     val:`$${expense.toLocaleString()}`,  sub:'Total egresos',             c:SS.orange },
+          { lb:'Balance Total',  val:`$${balance.toLocaleString()}`,  sub:balance >= 0 ? 'Saldo acumulado' : 'Saldo negativo', c:balance >= 0 ? SS.green : SS.red },
+          { lb:'Ingresos/mes',   val:`$${income.toLocaleString()}`,   sub:'Este mes',                  c:SS.cyan   },
+          { lb:'Gastos/mes',     val:`$${expense.toLocaleString()}`,  sub:'Este mes',                  c:SS.orange },
           { lb:'Ahorro/mes',     val:`$${Math.max(savings,0).toLocaleString()}`, sub:`${income>0?Math.round((Math.max(savings,0)/income)*100):0}% tasa de ahorro`, c:SS.yellow },
         ].map((s, i) => (
           <Card key={i} color={s.c} style={{ padding:'14px 14px' }}>

@@ -156,12 +156,32 @@ export function Salud({ state, toggleFast, addWeight, setFastGoal, setWeightGoal
         <Card color={SS.cyan} style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:10 }}>
           <CardTitle color={SS.cyan}>Meta Corporal</CardTitle>
           <Donut pct={weightPct} color={SS.green} size={100} stroke={11} label={`${currentWeight}`} sublabel="kg"/>
-          <div style={{ textAlign:'center' }}>
-            <div style={{ fontSize:11, color:SS.dimText }}>
-              Faltan <span style={{ color:SS.green, fontWeight:700 }}>{Math.max(0, +(currentWeight - weightGoal).toFixed(1))} kg</span>
-            </div>
-            <div style={{ fontSize:10, color:SS.mutedText }}>Meta: {weightGoal} kg · ~{Math.ceil(Math.max(0, currentWeight - weightGoal) / 0.5)} semanas</div>
-          </div>
+          {(() => {
+            const toGoal = +(currentWeight - weightGoal).toFixed(1);
+            const weeklyLoss = weightData.length >= 7
+              ? +(weightData[weightData.length - 7] - weightData[weightData.length - 1]).toFixed(2)
+              : 0;
+            const gaining = weeklyLoss <= 0;
+            const weeksEst = !gaining && weeklyLoss > 0
+              ? Math.ceil(Math.max(0, toGoal) / weeklyLoss)
+              : null;
+            return (
+              <div style={{ textAlign:'center' }}>
+                <div style={{ fontSize:11, color:SS.dimText }}>
+                  {toGoal > 0
+                    ? <>Faltan <span style={{ color:SS.green, fontWeight:700 }}>{toGoal} kg</span></>
+                    : <span style={{ color:SS.green, fontWeight:700 }}>¡Meta alcanzada! 🎉</span>
+                  }
+                </div>
+                <div style={{ fontSize:10, color: gaining && toGoal > 0 ? SS.orange : SS.mutedText }}>
+                  Meta: {weightGoal} kg · {weeksEst !== null ? `~${weeksEst} sem` : gaining && toGoal > 0 ? '↑ tendencia positiva' : '✓'}
+                </div>
+                {!gaining && weeklyLoss > 0 && (
+                  <div style={{ fontSize:9, color:SS.green, marginTop:1 }}>{weeklyLoss} kg/sem tendencia</div>
+                )}
+              </div>
+            );
+          })()}
         </Card>
       </div>
 

@@ -82,14 +82,16 @@ export function Productividad({ state, addProject, updateProject, deleteProject,
   const studyH = +(studyMin / 60).toFixed(1);
   const workH  = +(workMin  / 60).toFixed(1);
 
-  // Build weekly chart from real sessions
+  // Build weekly chart from real sessions; today (i=6) adds the live timer if running
   const weekStudy = Array.from({ length: 7 }, (_, i) => {
     const date = getDateStr(6 - i);
-    return state.studySessions.filter(s => s.date === date).reduce((a, b) => a + b.durationMin, 0) / 60;
+    const base = state.studySessions.filter(s => s.date === date).reduce((a, b) => a + b.durationMin, 0) / 60;
+    return i === 6 && state.studyTimerStart ? base + studyElapsed / 3600 : base;
   });
   const weekWork = Array.from({ length: 7 }, (_, i) => {
     const date = getDateStr(6 - i);
-    return state.workSessions.filter(s => s.date === date).reduce((a, b) => a + b.durationMin, 0) / 60;
+    const base = state.workSessions.filter(s => s.date === date).reduce((a, b) => a + b.durationMin, 0) / 60;
+    return i === 6 && state.workTimerStart ? base + workElapsed / 3600 : base;
   });
   const maxHrs = Math.max(...weekStudy, ...weekWork, 1);
 

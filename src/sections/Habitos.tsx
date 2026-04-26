@@ -71,7 +71,7 @@ export function Habitos({ state, toggleHabit, markAllHabits, addHabit, updateHab
 
   const maxStreak = Math.max(...habitStreaks, overallStreak, 0);
 
-  const totalPossible = habits.length * 30;
+  const totalPossible = habits.length * 25;
   const avgPct = totalPossible > 0 ? Math.round((completedTotal / totalPossible) * 100) : 0;
 
   const daily = Array.from({ length: 30 }, (_, i) => {
@@ -96,7 +96,7 @@ export function Habitos({ state, toggleHabit, markAllHabits, addHabit, updateHab
 
   const TRACKING_DAYS = 25;
   const topHabits = habits.map((h, i) => {
-    const done = habitCompletions.filter(c => c.habitId === h.id).length;
+    const done = habitCompletions.filter(c => c.habitId === h.id && last25Dates.has(c.date)).length;
     return { ...h, pct: Math.round((done / TRACKING_DAYS) * 100), streak: habitStreaks[i] ?? 0 };
   }).sort((a, b) => b.pct - a.pct);
 
