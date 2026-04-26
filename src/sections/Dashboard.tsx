@@ -104,6 +104,8 @@ export function Dashboard({ state, setSection, toggleHabit, setNote }: Props) {
   }));
 
   const todayNote = state.notes[TODAY_STR] ?? '';
+  const YESTERDAY = (() => { const d = new Date(); d.setDate(d.getDate() - 1); return d.toISOString().slice(0, 10); })();
+  const yesterdayNote = state.notes[YESTERDAY] ?? '';
   const dateStr = new Date().toLocaleDateString('es-MX', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
 
   return (
@@ -221,6 +223,14 @@ export function Dashboard({ state, setSection, toggleHabit, setNote }: Props) {
             outline:'none', resize:'vertical', lineHeight:1.5,
           }}
         />
+        {!todayNote && yesterdayNote && (
+          <div style={{ marginTop:10, borderTop:'1px solid rgba(255,255,255,0.05)', paddingTop:10 }}>
+            <div style={{ fontSize:9, color:SS.mutedText, marginBottom:4, letterSpacing:.6, textTransform:'uppercase' }}>Ayer</div>
+            <div style={{ fontSize:11, color:'rgba(255,255,255,0.35)', lineHeight:1.6, fontStyle:'italic' }}>
+              {yesterdayNote.length > 120 ? yesterdayNote.slice(0, 120) + '…' : yesterdayNote}
+            </div>
+          </div>
+        )}
       </Card>
     </div>
   );

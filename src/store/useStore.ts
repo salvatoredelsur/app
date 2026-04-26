@@ -248,6 +248,11 @@ export function useStore() {
         const elapsed = (Date.now() - startMs) / 3600000;
         const pct = Math.min(100, Math.round((elapsed / s.fastGoalHours) * 100));
         const date = today();
+        const existing = s.fastLog.find(e => e.date === date);
+        // Don't overwrite a completed fast entry with a partial one
+        if (existing?.completed && pct < 100) {
+          return { ...s, fastStartTime: null };
+        }
         const newLog = s.fastLog.filter(e => e.date !== date);
         newLog.push({ date, completed: elapsed >= s.fastGoalHours, pct });
         return { ...s, fastStartTime: null, fastLog: newLog };
