@@ -8,9 +8,9 @@ const NAV = [
   { id:'finanzas',      label:'Finanzas',   icon:'💰', color:'#ffe040' },
 ] as const;
 
-interface Props { active: SectionId; setSection: (s: SectionId) => void; }
+interface Props { active: SectionId; setSection: (s: SectionId) => void; timerRunning?: boolean; }
 
-export function BottomNav({ active, setSection }: Props) {
+export function BottomNav({ active, setSection, timerRunning }: Props) {
   return (
     <div style={{
       position:'fixed', bottom:0, left:0, right:0, height:62,
@@ -20,13 +20,17 @@ export function BottomNav({ active, setSection }: Props) {
     }}>
       {NAV.map(item => {
         const isActive = active === item.id;
+        const showDot = item.id === 'productividad' && timerRunning && !isActive;
         return (
           <button key={item.id} onClick={() => setSection(item.id as SectionId)} style={{
             display:'flex', flexDirection:'column', alignItems:'center', gap:2,
             background:'transparent', border:'none', cursor:'pointer', opacity: isActive ? 1 : 0.4,
-            transition:'opacity .15s', padding:'4px 8px',
+            transition:'opacity .15s', padding:'4px 8px', position:'relative',
           }}>
-            <span style={{ fontSize:18, filter: isActive ? `drop-shadow(0 0 6px ${item.color})` : 'none' }}>{item.icon}</span>
+            <span style={{ fontSize:18, filter: isActive ? `drop-shadow(0 0 6px ${item.color})` : 'none', position:'relative' }}>
+              {item.icon}
+              {showDot && <span style={{ position:'absolute', top:-1, right:-2, width:6, height:6, borderRadius:'50%', background:'#ffe040', boxShadow:'0 0 6px #ffe040', animation:'pulse-dot 1.5s ease-in-out infinite', display:'inline-block' }}/>}
+            </span>
             <span style={{ fontSize:8, color: isActive ? item.color : 'rgba(255,255,255,0.5)', fontFamily:"'DM Sans',sans-serif", fontWeight: isActive ? 700 : 400, letterSpacing:.4 }}>{item.label}</span>
           </button>
         );

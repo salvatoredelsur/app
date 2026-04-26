@@ -83,18 +83,20 @@ export function Productividad({ state, addProject, updateProject, deleteProject,
   useEffect(() => {
     if (!state.pomodoroTimerStart) { setPomodoroSecs(0); return; }
     const goalSecs = (state.pomodoroPhase === 'work' ? POMODORO_WORK_MIN : POMODORO_BREAK_MIN) * 60;
-    const tick = () => {
+    const elapsed0 = Math.floor((Date.now() - new Date(state.pomodoroTimerStart).getTime()) / 1000);
+    const remaining0 = Math.max(0, goalSecs - elapsed0);
+    setPomodoroSecs(remaining0);
+    // Update display every second
+    const ivId = setInterval(() => {
       const elapsed = Math.floor((Date.now() - new Date(state.pomodoroTimerStart!).getTime()) / 1000);
-      const remaining = goalSecs - elapsed;
-      if (remaining <= 0) {
-        advancePomodoro(state.pomodoroPhase);
-      } else {
-        setPomodoroSecs(remaining);
-      }
-    };
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
+      setPomodoroSecs(Math.max(0, goalSecs - elapsed));
+    }, 1000);
+    // Advance exactly once when the phase ends
+    const toId = setTimeout(() => {
+      clearInterval(ivId);
+      advancePomodoro(state.pomodoroPhase);
+    }, remaining0 * 1000);
+    return () => { clearInterval(ivId); clearTimeout(toId); };
   }, [state.pomodoroTimerStart, state.pomodoroPhase, advancePomodoro]);
 
   const TODAY = getDateStr(0);

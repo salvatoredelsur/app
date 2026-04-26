@@ -85,7 +85,7 @@ export default function App() {
         </div>
       </div>
 
-      {mobile && <BottomNav active={state.section} setSection={setSection}/>}
+      {mobile && <BottomNav active={state.section} setSection={setSection} timerRunning={!!(state.studyTimerStart || state.workTimerStart)}/>}
     </div>
   );
 }

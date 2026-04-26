@@ -19,7 +19,10 @@ interface Props {
   deleteHabit: (id: number) => void;
 }
 
-const WEEK_DAYS = ['L','M','X','J','V','S','D'];
+const WEEK_DAYS = Array.from({ length: 7 }, (_, i) => {
+  const d = new Date(); d.setDate(d.getDate() - (6 - i));
+  return d.toLocaleDateString('es-MX', { weekday: 'short' }).replace('.','').slice(0,1).toUpperCase();
+});;
 const HABIT_COLORS = [SS.green, SS.pink, SS.blue, SS.yellow, SS.orange, SS.purple, SS.cyan, '#ff9f43', '#74b9ff', '#fd79a8'];
 
 function getDateStr(daysAgo: number) {
