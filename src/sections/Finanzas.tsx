@@ -8,7 +8,6 @@ import { Blob } from '../components/shared/Blob';
 import { SectionHdr } from '../components/shared/SectionHdr';
 import { Card, CardTitle } from '../components/shared/Card';
 import { Bar } from '../components/shared/Bar';
-import { Sparkline } from '../components/shared/Sparkline';
 
 interface Props {
   state: AppState;
@@ -22,8 +21,6 @@ interface Props {
   addGoal: (g: Omit<Goal, 'id'>) => void;
   deleteGoal: (id: number) => void;
 }
-
-const FALLBACK_TREND = [38000,39500,40200,38800,41000,42500,41800,43200,44000,43500,44800,45230];
 
 const CAT_COLORS: Record<string, string> = {
   'Vivienda':      SS.blue,
@@ -70,21 +67,24 @@ export function Finanzas({ state, togglePayment, addTransaction, addGoalFunds, d
   const expense = monthTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
   const savings = income - expense;
 
-  const { balanceTrend, trendPct, monthLabels } = (() => {
-    const monthly: Record<string, number> = {};
-    for (const t of state.transactions) {
-      const m = t.date.slice(0, 7);
-      monthly[m] = (monthly[m] ?? 0) + (t.type === 'income' ? t.amount : -t.amount);
+  const monthlyData = (() => {
+    const result = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - i);
+      const m = d.toISOString().slice(0, 7);
+      const txs = state.transactions.filter(t => t.date.startsWith(m));
+      const inc = txs.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+      const exp = txs.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+      const label = d.toLocaleDateString('es-MX', { month: 'short' }).replace('.','').slice(0,3);
+      result.push({ m, label, inc, exp });
     }
-    const months = Object.keys(monthly).sort();
-    if (months.length < 2) {
-      const p = Math.round(((FALLBACK_TREND[FALLBACK_TREND.length-1] - FALLBACK_TREND[0]) / FALLBACK_TREND[0]) * 100);
-      return { balanceTrend: FALLBACK_TREND, trendPct: p, monthLabels: ['Ene','Feb','Mar','Abr'] };
-    }
-    const vals = months.map(m => Math.max(0, monthly[m]));
-    const p = vals[0] > 0 ? Math.round(((vals[vals.length-1] - vals[0]) / vals[0]) * 100) : 0;
-    const labels = months.map(m => { const d = new Date(m + '-01'); return d.toLocaleDateString('es-MX', { month: 'short' }).replace('.','').slice(0,3); });
-    return { balanceTrend: vals, trendPct: p, monthLabels: labels };
+    return result;
+  })();
+  const maxMonthly = Math.max(...monthlyData.map(d => Math.max(d.inc, d.exp)), 1);
+  const trendPct = (() => {
+    const prev = monthlyData[4], curr = monthlyData[5];
+    const prevNet = prev.inc - prev.exp, currNet = curr.inc - curr.exp;
+    return prevNet !== 0 ? Math.round(((currNet - prevNet) / Math.abs(prevNet)) * 100) : 0;
   })();
 
   const gastosCat = (() => {
@@ -156,7 +156,7 @@ export function Finanzas({ state, togglePayment, addTransaction, addGoalFunds, d
     <div style={{ position:'relative' }}>
       <CircuitBg id="fn" opacity={0.05}/>
       <Blob color={SS.green} top={-40} right={-40}/>
-      <SectionHdr title="Finanzas" sub={`Balance y objetivos — ${new Date().toLocaleDateString('es-MX',{month:'long',year:'numeric'})}`} color={SS.green} action="+ Transacción" onAction={() => setModal('tx')}/>
+      <SectionHdr title="Finanzas" sub={`Este mes: +$${income.toLocaleString()} · −$${expense.toLocaleString()} · balance total $${balance.toLocaleString()}`} color={SS.green} action="+ Transacción" onAction={() => setModal('tx')}/>
 
       <div style={{ display:'grid', gridTemplateColumns: mobile ? '1fr 1fr' : 'repeat(4,1fr)', gap:10, marginBottom:20 }}>
         {[
@@ -175,18 +175,33 @@ export function Finanzas({ state, togglePayment, addTransaction, addGoalFunds, d
 
       <div style={{ display:'grid', gridTemplateColumns: mobile ? '1fr' : '1fr 1fr', gap:14, marginBottom:20 }}>
         <Card color={SS.green}>
-          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
-            <CardTitle color={SS.green}>Tendencia de Balance</CardTitle>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
+            <CardTitle color={SS.green}>6 meses — Ingresos vs Gastos</CardTitle>
             <span style={{ fontSize:11, color: trendPct >= 0 ? SS.green : SS.red, fontWeight:700 }}>{trendPct >= 0 ? '+' : ''}{trendPct}% {trendPct >= 0 ? '↑' : '↓'}</span>
           </div>
-          <Sparkline data={balanceTrend} color={SS.green} width={400} height={60} fluid/>
-          <div style={{ display:'flex', justifyContent:'space-between', marginTop:4 }}>
-            {monthLabels.map((m, i) => <span key={i} style={{ fontSize:8, color:SS.mutedText }}>{m}</span>)}
+          <div style={{ display:'flex', alignItems:'flex-end', gap:6, height:72 }}>
+            {monthlyData.map((m, i) => (
+              <div key={i} style={{ flex:1, display:'flex', gap:2, alignItems:'flex-end', height:'100%' }}>
+                <div style={{ flex:1, background:SS.green, borderRadius:'3px 3px 0 0', minHeight:2, height:`${Math.max((m.inc / maxMonthly) * 68, 2)}px`, opacity: i === 5 ? 1 : 0.55, boxShadow: i === 5 ? `0 0 8px ${SS.green}66` : 'none' }}/>
+                <div style={{ flex:1, background:SS.red,   borderRadius:'3px 3px 0 0', minHeight:2, height:`${Math.max((m.exp / maxMonthly) * 68, 2)}px`, opacity: i === 5 ? 1 : 0.55, boxShadow: i === 5 ? `0 0 8px ${SS.red}66`   : 'none' }}/>
+              </div>
+            ))}
+          </div>
+          <div style={{ display:'flex', gap:6, marginTop:4 }}>
+            {monthlyData.map((m, i) => <span key={i} style={{ flex:1, textAlign:'center', fontSize:8, color: i === 5 ? SS.green : SS.mutedText, fontWeight: i === 5 ? 700 : 400 }}>{m.label}</span>)}
+          </div>
+          <div style={{ display:'flex', gap:16, marginTop:8 }}>
+            {[{c:SS.green,l:'Ingresos'},{c:SS.red,l:'Gastos'}].map((x, j) => (
+              <div key={j} style={{ display:'flex', alignItems:'center', gap:5 }}>
+                <div style={{ width:8, height:8, borderRadius:2, background:x.c }}/>
+                <span style={{ fontSize:9, color:SS.dimText }}>{x.l}</span>
+              </div>
+            ))}
           </div>
         </Card>
 
         <Card color={SS.orange}>
-          <CardTitle color={SS.orange}>Gastos por Categoría</CardTitle>
+          <CardTitle color={SS.orange}>Este mes — Gastos por Categoría</CardTitle>
           {gastosCat.length === 0 && <div style={{ fontSize:11, color:SS.dimText }}>Sin gastos registrados aún.</div>}
           {gastosCat.map((g, i) => (
             <div key={i} style={{ display:'flex', alignItems:'center', gap:8, marginBottom: i < gastosCat.length - 1 ? 6 : 0 }}>
