@@ -74,11 +74,12 @@ export function Salud({ state, toggleFast, addWeight, setFastGoal, setWeightGoal
   const imc = alturaM > 0 ? +(currentWeight / (alturaM * alturaM)).toFixed(1) : state.healthMetrics.imc;
 
   const imcStatus = imc < 18.5 ? 'Bajo peso' : imc < 25 ? 'Normal ✓' : imc < 30 ? 'Sobrepeso' : 'Obesidad';
+  const imcColor  = imc >= 18.5 && imc < 25 ? SS.green : imc >= 17 && imc < 30 ? SS.yellow : SS.red;
   const imcPct = imc >= 18.5 && imc < 25 ? 100 : imc < 18.5 ? Math.round((imc / 18.5) * 90) : Math.max(0, Math.round(100 - (imc - 25) * 6));
 
   const metrics = [
-    { label:'Peso actual', value:`${currentWeight}`, unit:'kg', color:SS.green,  goal:`Meta: ${weightGoal} kg`,  pct: weightPct, action: () => setShowWeightModal(true) },
-    { label:'IMC',         value:`${imc}`,           unit:'',  color:SS.cyan,   goal:imcStatus,                  pct: imcPct,    action: () => setShowMetricsModal(true) },
+    { label:'Peso actual', value:`${currentWeight}`, unit:'kg', color:SS.green, goal:`Meta: ${weightGoal} kg`,  pct: weightPct, action: () => setShowWeightModal(true) },
+    { label:'IMC',         value:`${imc}`,           unit:'',  color:imcColor,  goal:imcStatus,                 pct: imcPct,    action: () => setShowMetricsModal(true) },
     { label:'Grasa corp.', value:`${grasa}`,          unit:'%', color:SS.yellow, goal:'Meta: <15%',               pct: grasa > 0 ? Math.min(100, Math.round((15 / grasa) * 100)) : 0, action: () => setShowMetricsModal(true) },
     { label:'Músculo',     value:`${musculo}`,         unit:'%', color:SS.blue,   goal:'Meta: >45%',               pct: Math.min(100, Math.round((musculo / 45) * 100)), action: () => setShowMetricsModal(true) },
   ];

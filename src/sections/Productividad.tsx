@@ -253,9 +253,20 @@ export function Productividad({ state, addProject, updateProject, deleteProject,
                 <div style={{ fontSize:22, fontWeight:800, color:'white', fontVariantNumeric:'tabular-nums' }}>
                   {String(Math.floor(pomodoroSecs / 60)).padStart(2,'0')}:{String(pomodoroSecs % 60).padStart(2,'0')}
                 </div>
-                <div style={{ fontSize:9, color: state.pomodoroPhase === 'work' ? SS.red : SS.green, marginTop:1, fontWeight:600 }}>
+                <div style={{ fontSize:9, color: state.pomodoroPhase === 'work' ? SS.red : SS.green, marginTop:1, marginBottom:4, fontWeight:600 }}>
                   {state.pomodoroPhase === 'work' ? `🍅 Trabajo · ${POMODORO_WORK_MIN}min` : `☕ Descanso · ${POMODORO_BREAK_MIN}min`}
                 </div>
+                {(() => {
+                  const goalSecs = (state.pomodoroPhase === 'work' ? POMODORO_WORK_MIN : POMODORO_BREAK_MIN) * 60;
+                  const elapsed  = goalSecs - pomodoroSecs;
+                  const pct      = Math.min(100, Math.round((elapsed / goalSecs) * 100));
+                  const col      = state.pomodoroPhase === 'work' ? SS.red : SS.green;
+                  return (
+                    <div style={{ width:'100%', height:3, borderRadius:2, background:'rgba(255,255,255,0.06)', overflow:'hidden' }}>
+                      <div style={{ height:'100%', width:`${pct}%`, background:col, boxShadow:`0 0 6px ${col}`, borderRadius:2, transition:'width .5s linear' }}/>
+                    </div>
+                  );
+                })()}
               </>
             ) : (
               <div style={{ fontSize:28, fontWeight:900, color:SS.cyan, textShadow:`0 0 18px ${SS.cyan}80` }}>

@@ -46,21 +46,27 @@ export function Habitos({ state, toggleHabit, markAllHabits, addHabit, updateHab
   // Precompute lookup structures for O(1) access instead of O(n) scans per cell
   const cKey = (hid: number, date: string) => `${hid}|${date}`;
   const cSet = new Set(habitCompletions.map(c => cKey(c.habitId, c.date)));
+  const currentIds = new Set(habits.map(h => h.id));
+  // byDate counts only current habits — deleted habits' completions must not inflate stats
   const byDate = new Map<string, number>();
-  for (const c of habitCompletions) byDate.set(c.date, (byDate.get(c.date) ?? 0) + 1);
+  for (const c of habitCompletions) {
+    if (currentIds.has(c.habitId)) byDate.set(c.date, (byDate.get(c.date) ?? 0) + 1);
+  }
 
   const completedToday = byDate.get(TODAY_STR) ?? 0;
   const allDoneToday = habits.length > 0 && completedToday === habits.length;
 
   const last25Dates = new Set(Array.from({ length: 25 }, (_, i) => getDateStr(24 - i)));
-  const currentIds  = new Set(habits.map(h => h.id));
   const completedTotal = habitCompletions.filter(c => last25Dates.has(c.date) && currentIds.has(c.habitId)).length;
   const possibleTotal  = habits.length * 25;
   const remainingEst   = Math.max(0, possibleTotal - completedTotal);
 
   const habitStreaks = habits.map(h => {
     let streak = 0;
-    for (let i = 0; i < 60; i++) {
+    // If today isn't done yet, start counting from yesterday so the streak
+    // isn't zeroed out mid-day before the user gets a chance to complete it
+    const startI = cSet.has(cKey(h.id, TODAY_STR)) ? 0 : 1;
+    for (let i = startI; i < 60; i++) {
       if (cSet.has(cKey(h.id, getDateStr(i)))) streak++;
       else break;
     }
@@ -71,7 +77,10 @@ export function Habitos({ state, toggleHabit, markAllHabits, addHabit, updateHab
     if (habits.length === 0) return 0;
     let streak = 0;
     const half = Math.ceil(habits.length / 2);
-    for (let i = 0; i < 60; i++) {
+    // If today's threshold isn't met yet, start from yesterday
+    const todayDone = (byDate.get(TODAY_STR) ?? 0) >= half;
+    const startI = todayDone ? 0 : 1;
+    for (let i = startI; i < 60; i++) {
       if ((byDate.get(getDateStr(i)) ?? 0) >= half) streak++;
       else break;
     }

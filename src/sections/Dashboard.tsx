@@ -95,14 +95,15 @@ export function Dashboard({ state, setSection, toggleHabit, setNote }: Props) {
   const savings       = monthIncome - monthExpense;
   const savingsPct    = monthIncome > 0 ? Math.round((Math.max(savings, 0) / monthIncome) * 100) : 0;
   const topProjects   = [...state.projects].sort((a, b) => b.pct - a.pct).slice(0, 3);
+  // O(n) precompute instead of O(n×m) .some() per habit in sort+map
+  const doneTodaySet  = new Set(
+    state.habitCompletions.filter(c => c.date === TODAY_STR && activeHabitIds.has(c.habitId)).map(c => c.habitId)
+  );
   const todayHabits   = [...state.habits].sort((a, b) => {
-    const aDone = state.habitCompletions.some(c => c.habitId === a.id && c.date === TODAY_STR);
-    const bDone = state.habitCompletions.some(c => c.habitId === b.id && c.date === TODAY_STR);
+    const aDone = doneTodaySet.has(a.id);
+    const bDone = doneTodaySet.has(b.id);
     return aDone === bDone ? 0 : aDone ? 1 : -1;
-  }).slice(0, 5).map(h => ({
-    ...h,
-    done: state.habitCompletions.some(c => c.habitId === h.id && c.date === TODAY_STR),
-  }));
+  }).slice(0, 5).map(h => ({ ...h, done: doneTodaySet.has(h.id) }));
 
   const todayNote = state.notes[TODAY_STR] ?? '';
   const YESTERDAY = (() => { const d = new Date(); d.setDate(d.getDate() - 1); return d.toISOString().slice(0, 10); })();
