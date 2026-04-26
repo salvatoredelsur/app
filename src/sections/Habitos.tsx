@@ -42,7 +42,8 @@ export function Habitos({ state, toggleHabit, markAllHabits, addHabit, updateHab
   const completedToday = habitCompletions.filter(c => c.date === TODAY_STR).length;
   const allDoneToday = habits.length > 0 && completedToday === habits.length;
 
-  const completedTotal = habitCompletions.length;
+  const last25Dates = new Set(Array.from({ length: 25 }, (_, i) => getDateStr(24 - i)));
+  const completedTotal = habitCompletions.filter(c => last25Dates.has(c.date)).length;
   const possibleTotal  = habits.length * 25;
   const remainingEst   = Math.max(0, possibleTotal - completedTotal);
 
