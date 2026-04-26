@@ -371,7 +371,16 @@ export function Productividad({ state, addProject, updateProject, deleteProject,
             <div key={f.key} style={{ marginBottom:10 }}>
               <label style={labelStyle}>{f.label}</label>
               <input type="number" min="0" max={f.max}
-                value={editForm[f.key]} onChange={e => setEditForm(prev => ({ ...prev, [f.key]: e.target.value }))}
+                value={editForm[f.key]}
+                onChange={e => {
+                  const next = { ...editForm, [f.key]: e.target.value };
+                  if (f.key === 'done' || f.key === 'tasks') {
+                    const d = parseInt(f.key === 'done' ? e.target.value : editForm.done) || 0;
+                    const t = parseInt(f.key === 'tasks' ? e.target.value : editForm.tasks) || 0;
+                    if (t > 0) next.pct = String(Math.min(100, Math.round((d / t) * 100)));
+                  }
+                  setEditForm(next);
+                }}
                 style={inputStyle(editingProject.color)}/>
             </div>
           ))}

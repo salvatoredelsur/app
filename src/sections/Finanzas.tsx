@@ -98,7 +98,12 @@ export function Finanzas({ state, togglePayment, addTransaction, addGoalFunds, d
       .map(([cat, amount]) => ({ cat, amount, pct: expense > 0 ? Math.round((amount / expense) * 100) : 0, color: catColor(cat) }));
   })();
 
-  const pendingPayments = state.payments.filter(p => !p.paid);
+  const sortedPayments = [...state.payments].sort((a, b) => {
+    if (a.paid !== b.paid) return a.paid ? 1 : -1;
+    if (!a.paid && a.urgent !== b.urgent) return a.urgent ? -1 : 1;
+    return 0;
+  });
+  const pendingPayments = sortedPayments.filter(p => !p.paid);
   const pendingTotal    = pendingPayments.reduce((s, p) => s + p.amount, 0);
 
   const handleAddTx = () => {
@@ -245,7 +250,7 @@ export function Finanzas({ state, togglePayment, addTransaction, addGoalFunds, d
           <span style={{ fontSize:11, fontWeight:700, color:SS.red }}>Total: ${pendingTotal.toLocaleString()}</span>
         </div>
         <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-          {state.payments.map((p) => (
+          {sortedPayments.map((p) => (
             <div key={p.id} style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 12px', background:SS.card2, borderRadius:11, border:`1px solid ${p.urgent && !p.paid ? SS.red + '50' : SS.border}`, opacity: p.paid ? 0.5 : 1, transition:'opacity .2s' }}>
               <span style={{ fontSize:18, cursor:'pointer' }} onClick={() => togglePayment(p.id)}>{p.icon}</span>
               <div style={{ flex:1, cursor:'pointer' }} onClick={() => togglePayment(p.id)}>
@@ -309,7 +314,7 @@ export function Finanzas({ state, togglePayment, addTransaction, addGoalFunds, d
         <Modal title="Nueva Transacción" color={SS.green} onClose={() => setModal(null)}>
           <div style={{ display:'flex', gap:8, marginBottom:10 }}>
             {(['income','expense'] as const).map(t => (
-              <button key={t} onClick={() => setTxForm(prev => ({ ...prev, type: t }))}
+              <button key={t} onClick={() => setTxForm(prev => ({ ...prev, type: t, category: '' }))}
                 style={{ flex:1, padding:'7px', borderRadius:8, border:`1px solid ${txForm.type===t?(t==='income'?SS.green:SS.red):'rgba(255,255,255,0.1)'}`, background: txForm.type===t?(t==='income'?`${SS.green}20`:`${SS.red}20`):'transparent', color: txForm.type===t?(t==='income'?SS.green:SS.red):'rgba(255,255,255,0.4)', fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>
                 {t === 'income' ? '↑ Ingreso' : '↓ Gasto'}
               </button>
