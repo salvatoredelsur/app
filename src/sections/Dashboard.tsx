@@ -46,8 +46,9 @@ export function Dashboard({ state, setSection, toggleHabit, setNote }: Props) {
     const vals = Object.keys(monthly).sort().map(m => monthly[m]);
     return vals.length >= 2 ? vals : [38000,39500,40200,38800,41000,42500,41800,43200,44000,43500,44800,45230];
   })();
-  const completedToday = state.habitCompletions.filter(c => c.date === TODAY_STR).length;
   const totalHabits    = state.habits.length;
+  const activeHabitIds = new Set(state.habits.map(h => h.id));
+  const completedToday = state.habitCompletions.filter(c => c.date === TODAY_STR && activeHabitIds.has(c.habitId)).length;
   const habitPct       = totalHabits > 0 ? Math.round((completedToday / totalHabits) * 100) : 0;
 
   const studyMin = state.studySessions.filter(s => s.date === TODAY_STR).reduce((a, b) => a + b.durationMin, 0)
